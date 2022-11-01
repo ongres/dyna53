@@ -7,9 +7,14 @@
 package com.ongres.labs.dyna53.dynamohttp;
 
 
+import com.ongres.labs.dyna53.dyna53.Dynamo2Route53;
+import com.ongres.labs.dyna53.dyna53.TableDefinition;
+import com.ongres.labs.dyna53.dyna53.TableKeyDefinition;
+import com.ongres.labs.dyna53.dynamohttp.model.AttributeType;
 import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.response.CreateTableResponse;
+import com.ongres.labs.dyna53.route53.Route53Manager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +34,9 @@ public class DynamoHTTP {
 
     @Inject
     Jsonb jsonb;
+
+    @Inject
+    Route53Manager route53Manager;
 
     @POST
     public Object dynamoEntrypoint(@HeaderParam("X-Amz-Target") String amzTarget, String request) {
@@ -52,11 +60,17 @@ public class DynamoHTTP {
         var createTableRequest = jsonb.fromJson(request, CreateTableRequest.class);
         LOGGER.debug("Request as JSON: {}", createTableRequest);
 
-        var tableDescription = new TableDescription(createTableRequest.tableName());
+        // Map request to dyna53 data model, suitable for writing into Route53
+        var tableName = createTableRequest.tableName();
+        var route53Label = Dynamo2Route53.mapTableName(tableName);
+        var hashKey = new TableKeyDefinition(route53Label, AttributeType.S);
+        var tableDefinition = new TableDefinition(tableName, hashKey);
+
+        var route53Response = route53Manager.createTable(tableDefinition);
+        var tableDescription = new TableDescription(route53Response);
 
         var createTableResponse = new CreateTableResponse(tableDescription);
         LOGGER.debug("Response as JSON: {}", createTableResponse);
-
 
         return createTableResponse;
     }

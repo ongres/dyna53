@@ -18,6 +18,8 @@
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>2.13.2.Final</quarkus.platform.version>
     <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
+
+    <aws.sdk.version>2.17.292</aws.sdk.version>
   </properties>
 
   <dependencyManagement>
@@ -44,6 +46,16 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>route53</artifactId>
+      <version>${aws.sdk.version}</version>
+    </dependency>
+    <dependency>
+      <artifactId>netty-nio-client</artifactId>
+      <groupId>software.amazon.awssdk</groupId>
+      <version>${aws.sdk.version}</version>
     </dependency>
   </dependencies>
 
@@ -119,6 +131,10 @@
       </build>
       <properties>
         <quarkus.package.type>native</quarkus.package.type>
+        <quarkus.native.additional-build-args>
+            --initialize-at-run-time=software.amazon.awssdk.utils.cache.CachedSupplier
+          , -H:ReflectionConfigurationFiles=reflection-config.json
+        </quarkus.native.additional-build-args>
       </properties>
     </profile>
   </profiles>

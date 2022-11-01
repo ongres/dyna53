@@ -25,7 +25,7 @@ However none of them exposes a well-known API like serverless' DynamoDB, which m
 
 ## Limitations
 
-[AWS Route53 has some limitations](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-entities-records) that result also on some limitations for Dyna53, like the maximum number of records, values or value length.
+See [Limitations](doc/limitations.md).
 
 
 ## Disclaimer
