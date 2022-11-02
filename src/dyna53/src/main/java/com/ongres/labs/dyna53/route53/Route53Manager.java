@@ -7,6 +7,7 @@
 package com.ongres.labs.dyna53.route53;
 
 
+import com.ongres.labs.dyna53.dyna53.Dynamo2Route53;
 import com.ongres.labs.dyna53.dyna53.TableDefinition;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import software.amazon.awssdk.services.route53.Route53AsyncClient;
@@ -32,18 +33,39 @@ public class Route53Manager {
     @Inject
     Jsonb jsonb;
 
-    public String createTable(TableDefinition tableDefinition) {
-
-        var response = createSingleValuedResource(
-                tableDefinition.tableName(),
+    public void createTable(TableDefinition tableDefinition) {
+        createSingleValuedResource(
+                tableDefinition.getTableName(),
                 // To avoid having to escape double quote in JSON ('"'), we convert to single quote. Better for Route53
                 // Only applies to table definitions stored in Route53 records
                 jsonb.toJson(tableDefinition).replace('"', '\'')
+        ).join();
+    }
+
+    public TableDefinition describeTable(String tableName) {
+        var label = Dynamo2Route53.mapTableName(tableName);
+
+        var result = route53AsyncClient.listResourceRecordSets(
+                ListResourceRecordSetsRequest.builder()
+                        .hostedZoneId(hostedZone)
+                        .startRecordName(label + "." + zoneDomainName)
+                        .maxItems("" + 1)
+                        .build()
+        ).join();
+
+        if(! result.hasResourceRecordSets()) {
+            // TODO: error handling
+        }
+
+        String storedTableDefinition = rrValue2String(
+                result.resourceRecordSets().get(0).resourceRecords().get(0).value()
         );
 
-        response.join();
+        var asValidJson = storedTableDefinition.replace('\'', '"');
+        var tableDefinition = jsonb.fromJson(asValidJson, TableDefinition.class);
 
-        return "TODO";
+
+        return tableDefinition;
     }
 
     private CompletableFuture<ChangeResourceRecordSetsResponse> createSingleValuedResource(String label, String value) {
@@ -82,5 +104,12 @@ public class Route53Manager {
                 // TODO: if value.length() > 255 it needs to be split into multiple strings
                 .value(stringBuilder.toString())
                 .build();
+    }
+
+    /**
+     * Route53 resource record TXT values are always quoted. This method unquotes them.
+     */
+    private String rrValue2String(String rrValue) {
+        return rrValue.substring(1, rrValue.length() - 1);
     }
 }

@@ -11,5 +11,12 @@ import javax.json.bind.annotation.JsonbProperty;
 
 
 public record TableDescription (
-    @JsonbProperty("TableName") String tableName
-) {}
+    @JsonbProperty("TableName") String tableName,
+    @JsonbProperty("TableStatus") TableStatus tableStatus,
+    @JsonbProperty("AttributeDefinitions") AttributeDefinition[] attributeDefinitions,
+    @JsonbProperty("KeySchema") KeySchema[] keySchema
+) {
+    public TableDescription(String tableName, AttributeDefinition[] attributeDefinitions, KeySchema[] keySchema) {
+        this(tableName, TableStatus.ACTIVE, attributeDefinitions, keySchema);
+    }
+}
