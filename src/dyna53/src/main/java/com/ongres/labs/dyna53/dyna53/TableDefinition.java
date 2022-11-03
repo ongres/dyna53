@@ -9,6 +9,7 @@ package com.ongres.labs.dyna53.dyna53;
 
 import javax.json.bind.annotation.JsonbCreator;
 import javax.json.bind.annotation.JsonbProperty;
+import javax.json.bind.annotation.JsonbTransient;
 import java.util.Optional;
 
 
@@ -17,7 +18,7 @@ import java.util.Optional;
  * Switching to POJO and using the empty constructor annotated with @JsonbCreator removes this problem.
  */
 public class TableDefinition {
-    @JsonbProperty("tb") private String tableName;
+    @JsonbTransient private String tableName;
     @JsonbProperty("hk") private TableKeyDefinition hashKey;
     @JsonbProperty("rk") private Optional<TableKeyDefinition> rangeKey = Optional.empty();
 

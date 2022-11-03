@@ -7,18 +7,12 @@
 package com.ongres.labs.dyna53.dynamohttp;
 
 
-import com.ongres.labs.dyna53.dyna53.Dynamo2Route53;
-import com.ongres.labs.dyna53.dyna53.TableDefinition;
-import com.ongres.labs.dyna53.dyna53.TableKeyDefinition;
-import com.ongres.labs.dyna53.dynamohttp.model.AttributeDefinition;
-import com.ongres.labs.dyna53.dynamohttp.model.KeySchema;
-import com.ongres.labs.dyna53.dynamohttp.model.KeyType;
-import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
+import com.ongres.labs.dyna53.dyna53.op.CreateTableManager;
+import com.ongres.labs.dyna53.dyna53.op.DescribeTableManager;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.DescribeTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.response.CreateTableResponse;
 import com.ongres.labs.dyna53.dynamohttp.response.DescribeTableResponse;
-import com.ongres.labs.dyna53.route53.Route53Manager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +22,6 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import java.util.Optional;
 
 
 @Path("/")
@@ -41,7 +34,10 @@ public class DynamoHTTP {
     Jsonb jsonb;
 
     @Inject
-    Route53Manager route53Manager;
+    CreateTableManager createTableManager;
+
+    @Inject
+    DescribeTableManager describeTableManager;
 
     @POST
     public Object dynamoEntrypoint(@HeaderParam("X-Amz-Target") String amzTarget, String request) {
@@ -52,7 +48,9 @@ public class DynamoHTTP {
 
         var operation = DynamoOperation.getByValue(dynamoVersionOperation[1]);
         if(null == operation) {
-            throw new BadRequestException("Invalid or unsupported operation");
+            var message = "Invalid or unsupported operation " + "'" + dynamoVersionOperation[1] + "'";
+            LOGGER.debug(message);
+            throw new BadRequestException(message);
         }
 
         return switch (operation) {
@@ -62,97 +60,19 @@ public class DynamoHTTP {
     }
 
     private CreateTableResponse createTable(String request) {
-        LOGGER.debug("String Request: {}", request);
         var createTableRequest = jsonb.fromJson(request, CreateTableRequest.class);
-        LOGGER.debug("Request as JSON: {}", createTableRequest);
+        createTableManager.createTable(createTableRequest);
 
-        var tableDefinition = tableDefinitionFromRequest(createTableRequest);
+        var tableDescription = describeTableManager.queryTableDescription(createTableRequest.tableName());
 
-        route53Manager.createTable(tableDefinition);
-        var tableDescription = queryTableDescription(createTableRequest.tableName());
-
-        var createTableResponse = new CreateTableResponse(tableDescription);
-        LOGGER.debug("Response as JSON: {}", createTableResponse);
-
-        return createTableResponse;
-    }
-
-    private TableDefinition tableDefinitionFromRequest(CreateTableRequest createTableRequest) {
-        TableKeyDefinition hk = null;
-        TableKeyDefinition rk = null;
-        for(var keySchema : createTableRequest.keySchema()) {
-            var tableKeyDefinition = extractTableKeyDefinition(
-                    keySchema.attributeName(),
-                    createTableRequest.attributeDefinitions()
-            );
-            assert tableKeyDefinition != null;
-
-            switch (keySchema.keyType()) {
-                case HASH -> hk = tableKeyDefinition;
-                case RANGE -> rk = tableKeyDefinition;
-            }
-        }
-
-        assert hk != null;
-
-        // Map request to dyna53 data model, suitable for writing into Route53
-        var tableName = createTableRequest.tableName();
-        var route53Label = Dynamo2Route53.mapTableName(tableName);
-
-        return new TableDefinition(route53Label, hk, Optional.ofNullable(rk));
-    }
-
-    private TableKeyDefinition extractTableKeyDefinition(String keyName, AttributeDefinition[] attributeDefinitions) {
-        for(var attributeDefinition : attributeDefinitions) {
-            if(keyName.equals(attributeDefinition.attributeName())) {
-                return new TableKeyDefinition(keyName, attributeDefinition.attributeType());
-            }
-        }
-
-        return null;
+        return new CreateTableResponse(tableDescription);
     }
 
     private DescribeTableResponse describeTable(String request) {
-        LOGGER.debug("String Request: {}", request);
-
         var describeTableRequest = jsonb.fromJson(request, DescribeTableRequest.class);
-        LOGGER.debug("Request as JSON: {}", describeTableRequest);
 
-        return new DescribeTableResponse(
-                queryTableDescription(describeTableRequest.tableName())
-        );
-    }
+        var tableDescription = describeTableManager.queryTableDescription(describeTableRequest.tableName());
 
-    private TableDescription queryTableDescription(String tableName) {
-        var tableDefinition = route53Manager.describeTable(tableName);
-
-        return tableDescriptionFromTableDefinition(tableDefinition);
-    }
-
-    private TableDescription tableDescriptionFromTableDefinition(TableDefinition tableDefinition) {
-        AttributeDefinition[] attributeDefinitions;
-        KeySchema[] keySchema;
-        var hashKeyDefinition = tableDefinition.getHashKey();
-        var rangeKeyDefinition = tableDefinition.getRangeKey();
-
-        if(rangeKeyDefinition.isPresent()) {
-            attributeDefinitions = new AttributeDefinition[] {
-                    new AttributeDefinition(hashKeyDefinition.keyName(), hashKeyDefinition.keyType()),
-                    new AttributeDefinition(rangeKeyDefinition.get().keyName(), rangeKeyDefinition.get().keyType())
-            };
-            keySchema = new KeySchema[] {
-                    new KeySchema(hashKeyDefinition.keyName(), KeyType.HASH),
-                    new KeySchema(rangeKeyDefinition.get().keyName(), KeyType.RANGE)
-            };
-        } else {
-            attributeDefinitions = new AttributeDefinition[] {
-                    new AttributeDefinition(hashKeyDefinition.keyName(), hashKeyDefinition.keyType())
-            };
-            keySchema = new KeySchema[] {
-                    new KeySchema(hashKeyDefinition.keyName(), KeyType.HASH)
-            };
-        }
-
-        return new TableDescription(tableDefinition.getTableName(), attributeDefinitions, keySchema);
+        return new DescribeTableResponse(tableDescription);
     }
 }
