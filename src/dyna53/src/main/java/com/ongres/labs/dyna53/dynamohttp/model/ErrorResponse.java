@@ -10,7 +10,7 @@ package com.ongres.labs.dyna53.dynamohttp.model;
 import javax.json.bind.annotation.JsonbProperty;
 
 
-public record AttributeDefinition(
-        @JsonbProperty("AttributeName") String attributeName,
-        @JsonbProperty("AttributeType") KeyAttributeType keyAttributeType
+public record ErrorResponse(
+        @JsonbProperty("__type") ErrorResponseType type,
+        @JsonbProperty("message") String message
 ) {}

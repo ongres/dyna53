@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.route53.model.*;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 
@@ -27,7 +28,7 @@ public class Route53Manager {
     @Inject
     Route53AsyncClient route53AsyncClient;
 
-    public String getSingleValuedResource(String label) {
+    public Optional<String> getSingleValuedResource(String label) {
         var result = route53AsyncClient.listResourceRecordSets(
                 ListResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
@@ -37,18 +38,29 @@ public class Route53Manager {
         ).join();
 
         if(! result.hasResourceRecordSets()) {
-            // TODO: error handling
+            return Optional.empty();
+        }
+        var resourceRecordsSetList = result.resourceRecordSets();
+        if(resourceRecordsSetList.isEmpty()) {
+            return Optional.empty();
         }
 
-        return resourceValue2String(
-                // TODO: hackish, no error checks
-                result.resourceRecordSets().get(0).resourceRecords().get(0).value()
+        return Optional.of(
+                resourceValue2String(
+                        // TODO: hackish, no error checks
+                        resourceRecordsSetList.get(0).resourceRecords().get(0).value()
+                )
         );
     }
 
     public void createSingleValuedResource(String label, String value) {
         // TODO: error checking, timeouts, etc
         createAsyncSingleValuedResource(label, value).join();
+    }
+
+    public void createSingleValuedResource(String subLabel, String label, String value) {
+        // TODO: error checking, timeouts, etc
+        createAsyncSingleValuedResource(subLabel + "." + label, value).join();
     }
 
     private CompletableFuture<ChangeResourceRecordSetsResponse> createAsyncSingleValuedResource(String label, String value) {

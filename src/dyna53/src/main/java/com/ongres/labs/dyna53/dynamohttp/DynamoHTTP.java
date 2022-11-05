@@ -7,12 +7,18 @@
 package com.ongres.labs.dyna53.dynamohttp;
 
 
-import com.ongres.labs.dyna53.dyna53.op.CreateTableManager;
-import com.ongres.labs.dyna53.dyna53.op.DescribeTableManager;
+import com.ongres.labs.dyna53.dyna53.processor.PutItemProcessor;
+import com.ongres.labs.dyna53.dyna53.processor.TableProcessor;
+import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
+import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
+import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.DescribeTableRequest;
+import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
+import com.ongres.labs.dyna53.dynamohttp.response.DynamoResponse;
 import com.ongres.labs.dyna53.dynamohttp.response.CreateTableResponse;
 import com.ongres.labs.dyna53.dynamohttp.response.DescribeTableResponse;
+import com.ongres.labs.dyna53.dynamohttp.response.PutItemResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,13 +40,14 @@ public class DynamoHTTP {
     Jsonb jsonb;
 
     @Inject
-    CreateTableManager createTableManager;
+    TableProcessor tableProcessor;
 
     @Inject
-    DescribeTableManager describeTableManager;
+    PutItemProcessor putItemProcessor;
 
     @POST
-    public Object dynamoEntrypoint(@HeaderParam("X-Amz-Target") String amzTarget, String request) {
+    public DynamoResponse dynamoEntrypoint(@HeaderParam("X-Amz-Target") String amzTarget, String request)
+    throws DynamoException {
         String[] dynamoVersionOperation = amzTarget.split("\\.");
         if(! DYNAMO_V1_20120810.equals(dynamoVersionOperation[0])) {
             throw new BadRequestException("Unsupported API Version " + dynamoVersionOperation[0]);
@@ -50,29 +57,45 @@ public class DynamoHTTP {
         if(null == operation) {
             var message = "Invalid or unsupported operation " + "'" + dynamoVersionOperation[1] + "'";
             LOGGER.debug(message);
+            LOGGER.debug("Request[" + request + "]");
             throw new BadRequestException(message);
         }
 
         return switch (operation) {
             case CREATE_TABLE -> createTable(request);
             case DESCRIBE_TABLE -> describeTable(request);
+            case PUT_ITEM -> putItem(request);
         };
     }
 
     private CreateTableResponse createTable(String request) {
         var createTableRequest = jsonb.fromJson(request, CreateTableRequest.class);
-        createTableManager.createTable(createTableRequest);
+        tableProcessor.createTable(createTableRequest);
 
-        var tableDescription = describeTableManager.queryTableDescription(createTableRequest.tableName());
+        TableDescription tableDescription = null;
+        try {
+            tableDescription = tableProcessor.queryTableDescription(createTableRequest.tableName());
+        } catch (ResourceNotFoundException e) {
+            // Should not happen, table should be able to be created.
+            return null;
+        }
 
         return new CreateTableResponse(tableDescription);
     }
 
-    private DescribeTableResponse describeTable(String request) {
+    private DescribeTableResponse describeTable(String request) throws ResourceNotFoundException {
         var describeTableRequest = jsonb.fromJson(request, DescribeTableRequest.class);
 
-        var tableDescription = describeTableManager.queryTableDescription(describeTableRequest.tableName());
+        var tableDescription = tableProcessor.queryTableDescription(describeTableRequest.tableName());
 
         return new DescribeTableResponse(tableDescription);
+    }
+
+    private PutItemResponse putItem(String request) throws DynamoException {
+        var putItemRequest = jsonb.fromJson(request, PutItemRequest.class);
+
+        putItemProcessor.putItem(putItemRequest);
+
+        return new PutItemResponse();
     }
 }

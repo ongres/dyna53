@@ -8,7 +8,10 @@ package com.ongres.labs.dyna53.dynamohttp.model;
 
 
 public enum AttributeType {
-    S,
+    // TODO: for now, only scalar types are supported (or at least, tested)
+    B,
+    BOOL,
     N,
-    B;
+    NULL,
+    S;
 }

@@ -7,10 +7,13 @@
 package com.ongres.labs.dyna53.dynamohttp.request;
 
 
+import com.ongres.labs.dyna53.dynamohttp.model.Item;
+
 import javax.json.bind.annotation.JsonbProperty;
 
 
-public record DescribeTableRequest(
-        @JsonbProperty("TableName") String tableName
+public record PutItemRequest(
+    @JsonbProperty("TableName") String tableName,
+    @JsonbProperty("Item") Item item
 ) {
 }

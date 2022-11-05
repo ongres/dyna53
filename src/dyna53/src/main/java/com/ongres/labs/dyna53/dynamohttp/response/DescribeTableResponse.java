@@ -14,4 +14,4 @@ import javax.json.bind.annotation.JsonbProperty;
 
 public record DescribeTableResponse(
     @JsonbProperty("Table") TableDescription tableDescription
-) {}
+) implements DynamoResponse {}
