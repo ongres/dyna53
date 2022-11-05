@@ -61,7 +61,7 @@ public class PutItemProcessor {
         var hkLabel = Dynamo2Route53.toValidRoute53Label(
                 item.getAttribute(hashKey.keyName()).get().value()
         );
-        route53Manager.createSingleValuedResource(hkLabel, dyna53TableName, serializedItem);
+        route53Manager.createSingleValuedTXTResource(hkLabel, dyna53TableName, serializedItem);
     }
 
     private void validateKey(Item item, TableKeyDefinition tableKeyDefinition) throws ValidationException {

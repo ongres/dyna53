@@ -16,7 +16,8 @@ import java.util.stream.Collectors;
 public enum DynamoOperation {
     CREATE_TABLE("CreateTable"),
     DESCRIBE_TABLE("DescribeTable"),
-    PUT_ITEM("PutItem")
+    PUT_ITEM("PutItem"),
+    LIST_TABLES("ListTables")
     ;
 
     private final String value;

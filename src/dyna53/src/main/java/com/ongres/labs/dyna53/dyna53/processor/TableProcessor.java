@@ -17,11 +17,13 @@ import com.ongres.labs.dyna53.dynamohttp.model.KeySchema;
 import com.ongres.labs.dyna53.dynamohttp.model.KeyType;
 import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
+import com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest;
 import com.ongres.labs.dyna53.route53.Route53Manager;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 
 @ApplicationScoped
@@ -38,7 +40,7 @@ public class TableProcessor {
     public void createTable(CreateTableRequest createTableRequest) {
         var tableDefinition = tableDefinitionFromRequest(createTableRequest);
         var serializedTableDefinition = dynamo2Route53.serializeTableDefinition(tableDefinition);
-        route53Manager.createSingleValuedResource(tableDefinition.getTableName(), serializedTableDefinition);
+        route53Manager.createDummySRVResource(tableDefinition.getTableName(), serializedTableDefinition);
     }
 
     private TableDefinition tableDefinitionFromRequest(CreateTableRequest createTableRequest) {
@@ -78,7 +80,7 @@ public class TableProcessor {
 
     public Optional<TableDefinition> tableDefinitionFromRoute53(String label) {
         return route53Manager
-                .getSingleValuedResource(label)
+                .getSingleValuedSRVResource(label)
                 .map(
                         serializedTableDefinition -> dynamo2Route53.deserializeTableDefinition(
                                 label, serializedTableDefinition
@@ -121,5 +123,11 @@ public class TableProcessor {
         }
 
         return new TableDescription(tableDefinition.getTableName(), attributeDefinitions, keySchema);
+    }
+
+    public Stream<String> listTables(ListTablesRequest listTablesRequest) {
+        // listTablesRequest is ignored for now, full list is returned, sorry!
+
+        return route53Manager.listSRVRecordsLabel();
     }
 }

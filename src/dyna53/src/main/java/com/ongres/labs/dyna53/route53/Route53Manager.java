@@ -15,10 +15,18 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 
 
 @ApplicationScoped
 public class Route53Manager {
+    // SRV records will be used as (effectively) simple text records by ignoring the first three integer fields
+    private static final String SRV_DUMMY_PREFIX = "0 53 0 ";
+
+    // If records are searched by lexicographical order, there can be no records before this one
+    // Note that the '\0' character needs to be escaped as '\000'
+    private static final String FIRST_LETTER_FIRST_POSSIBLE_LEXICOGRAPHICAL_DOMAIN_NAME_ROUTE53_ESCAPED = "\\000";
+
     @ConfigProperty(name = "hosted_zone")
     String hostedZone;
 
@@ -28,11 +36,12 @@ public class Route53Manager {
     @Inject
     Route53AsyncClient route53AsyncClient;
 
-    public Optional<String> getSingleValuedResource(String label) {
+    private Optional<String> getSingleValuedResource(String label, RRType rrType) {
         var result = route53AsyncClient.listResourceRecordSets(
                 ListResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
                         .startRecordName(label + "." + zoneDomainName)
+                        .startRecordType(rrType)
                         .maxItems("" + 1)
                         .build()
         ).join();
@@ -46,24 +55,23 @@ public class Route53Manager {
         }
 
         return Optional.of(
-                resourceValue2String(
-                        // TODO: hackish, no error checks
-                        resourceRecordsSetList.get(0).resourceRecords().get(0).value()
-                )
+                // TODO: hackish, no error checks
+                resourceRecordsSetList.get(0).resourceRecords().get(0).value()
         );
     }
 
-    public void createSingleValuedResource(String label, String value) {
-        // TODO: error checking, timeouts, etc
-        createAsyncSingleValuedResource(label, value).join();
+    public Optional<String> getSingleValuedTXTResource(String label) {
+        return getSingleValuedResource(label, RRType.TXT).map(r -> txtResourceValue2String(r));
     }
 
-    public void createSingleValuedResource(String subLabel, String label, String value) {
-        // TODO: error checking, timeouts, etc
-        createAsyncSingleValuedResource(subLabel + "." + label, value).join();
+    public Optional<String> getSingleValuedSRVResource(String label) {
+        return getSingleValuedResource(label, RRType.SRV).map(r -> srvResourceValue2String(r));
     }
 
-    private CompletableFuture<ChangeResourceRecordSetsResponse> createAsyncSingleValuedResource(String label, String value) {
+    // TODO: error checking, timeouts, etc
+    private CompletableFuture<ChangeResourceRecordSetsResponse> createAsyncResourceRecord(
+            String label, RRType rrType, ResourceRecord resourceRecord
+    ) {
         return route53AsyncClient.changeResourceRecordSets(
                 ChangeResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
@@ -75,10 +83,8 @@ public class Route53Manager {
                                                         .resourceRecordSet(
                                                                 ResourceRecordSet.builder()
                                                                         .name(label + "." + zoneDomainName)
-                                                                        .type(RRType.TXT)
-                                                                        .resourceRecords(
-                                                                                singleValuedResouce(value)
-                                                                        )
+                                                                        .type(rrType)
+                                                                        .resourceRecords(resourceRecord)
                                                                         .ttl(1L)
                                                                         .build()
                                                         ).build()
@@ -87,7 +93,23 @@ public class Route53Manager {
         );
     }
 
-    private ResourceRecord singleValuedResouce(String value) {
+    private CompletableFuture<ChangeResourceRecordSetsResponse> createSingleValuedTXTResource(
+            String label, String value
+    ) {
+        return createAsyncResourceRecord(label, RRType.TXT, singleValuedResource(value));
+    }
+
+    public void createSingleValuedTXTResource(String subLabel, String label, String value) {
+        createSingleValuedTXTResource(subLabel + "." + label, value).join();
+    }
+
+    public void createDummySRVResource(String label, String value) {
+        createAsyncResourceRecord(
+                label, RRType.SRV, value2DummySRVResource(value)
+        ).join();
+    }
+
+    private ResourceRecord singleValuedResource(String value) {
         var stringBuilder = new StringBuilder()
                 .append("\"")
                 // TODO: escape needed characters
@@ -104,7 +126,40 @@ public class Route53Manager {
     /**
      * Route53 resource record TXT values are always quoted. This method unquotes them.
      */
-    private String resourceValue2String(String rrValue) {
+    private String txtResourceValue2String(String rrValue) {
         return rrValue.substring(1, rrValue.length() - 1);
+    }
+
+    private ResourceRecord value2DummySRVResource(String value) {
+        return ResourceRecord.builder()
+                .value(SRV_DUMMY_PREFIX + value)
+                .build();
+    }
+
+    private String srvResourceValue2String(String rrValue) {
+        return rrValue.substring(SRV_DUMMY_PREFIX.length());
+    }
+
+    public Stream<String> listSRVRecordsLabel() {
+        var result = route53AsyncClient.listResourceRecordSets(
+                ListResourceRecordSetsRequest.builder()
+                        .hostedZoneId(hostedZone)
+                        .startRecordType(RRType.SRV)
+                        // Surprisingly, if we don't include .startRecordName() we get a 400 - InvalidInputException
+                        .startRecordName(FIRST_LETTER_FIRST_POSSIBLE_LEXICOGRAPHICAL_DOMAIN_NAME_ROUTE53_ESCAPED)
+                        .build()
+        ).join();
+
+        return result.resourceRecordSets().stream()
+                // Exclude non-dyna53 SRV records
+                .filter(resourceRecordSet ->
+                        resourceRecordSet.resourceRecords().stream()
+                                .allMatch(resourceRecord -> resourceRecord.value().startsWith(SRV_DUMMY_PREFIX))
+                )
+                .map(resourceRecordSet -> route53FullLabel2Label(resourceRecordSet.name()));
+    }
+
+    private String route53FullLabel2Label(String value) {
+        return value.substring(0, value.length() - ".".length() - zoneDomainName.length()  - 1);
     }
 }

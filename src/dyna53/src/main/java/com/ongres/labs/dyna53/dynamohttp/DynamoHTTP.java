@@ -14,11 +14,9 @@ import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
 import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.DescribeTableRequest;
+import com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
-import com.ongres.labs.dyna53.dynamohttp.response.DynamoResponse;
-import com.ongres.labs.dyna53.dynamohttp.response.CreateTableResponse;
-import com.ongres.labs.dyna53.dynamohttp.response.DescribeTableResponse;
-import com.ongres.labs.dyna53.dynamohttp.response.PutItemResponse;
+import com.ongres.labs.dyna53.dynamohttp.response.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +62,7 @@ public class DynamoHTTP {
         return switch (operation) {
             case CREATE_TABLE -> createTable(request);
             case DESCRIBE_TABLE -> describeTable(request);
+            case LIST_TABLES -> listTables(request);
             case PUT_ITEM -> putItem(request);
         };
     }
@@ -89,6 +88,13 @@ public class DynamoHTTP {
         var tableDescription = tableProcessor.queryTableDescription(describeTableRequest.tableName());
 
         return new DescribeTableResponse(tableDescription);
+    }
+
+    private ListTablesResponse listTables(String request) {
+        var listTablesRequest = jsonb.fromJson(request, ListTablesRequest.class);
+        var tableNames = tableProcessor.listTables(listTablesRequest);
+
+        return new ListTablesResponse(tableNames.toArray(String[]::new));
     }
 
     private PutItemResponse putItem(String request) throws DynamoException {
