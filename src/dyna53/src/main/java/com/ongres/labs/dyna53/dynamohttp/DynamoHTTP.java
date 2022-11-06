@@ -7,10 +7,11 @@
 package com.ongres.labs.dyna53.dynamohttp;
 
 
-import com.ongres.labs.dyna53.dyna53.processor.PutItemProcessor;
+import com.ongres.labs.dyna53.dyna53.processor.ItemProcessor;
 import com.ongres.labs.dyna53.dyna53.processor.TableProcessor;
 import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
 import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
+import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
 import com.ongres.labs.dyna53.dynamohttp.request.*;
 import com.ongres.labs.dyna53.dynamohttp.response.*;
@@ -38,7 +39,7 @@ public class DynamoHTTP {
     TableProcessor tableProcessor;
 
     @Inject
-    PutItemProcessor putItemProcessor;
+    ItemProcessor itemProcessor;
 
     private <T> T parseRequest(String request, Class<T> destination) {
         // TODO: add proper validation, error detection...
@@ -67,6 +68,7 @@ public class DynamoHTTP {
             case LIST_TABLES -> listTables(parseRequest(request, ListTablesRequest.class));
             case PUT_ITEM -> putItem(parseRequest(request, PutItemRequest.class));
             case DESCRIBE_TIME_TO_LIVE -> describeTimeToLive(parseRequest(request, DescribeTimeToLiveRequest.class));
+            case SCAN -> scan(parseRequest(request, ScanRequest.class));
         };
     }
 
@@ -98,7 +100,7 @@ public class DynamoHTTP {
     }
 
     private PutItemResponse putItem(PutItemRequest putItemRequest) throws DynamoException {
-        putItemProcessor.putItem(putItemRequest);
+        itemProcessor.putItem(putItemRequest);
 
         return new PutItemResponse();
     }
@@ -106,8 +108,18 @@ public class DynamoHTTP {
     // TTL is not really implemented, so returning always a dummy response for enhanced compatibility with tools
     private DescribeTimeToLiveResponse describeTimeToLive(DescribeTimeToLiveRequest describeTimeToLiveRequest)
     throws ResourceNotFoundException {
+        tableProcessor.checkTableIsValid(describeTimeToLiveRequest.tableName());
+
         return new DescribeTimeToLiveResponse(
                 tableProcessor.timeToLiveDescription(describeTimeToLiveRequest)
         );
+    }
+
+    private ScanResponse scan(ScanRequest scanRequest) throws DynamoException {
+        tableProcessor.checkTableIsValid(scanRequest.tableName());
+
+        var items = itemProcessor.scan(scanRequest).toArray(Item[]::new);
+
+        return new ScanResponse(items, items.length, items.length, null);
     }
 }

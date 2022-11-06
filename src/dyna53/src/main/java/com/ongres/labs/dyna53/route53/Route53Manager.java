@@ -148,17 +148,20 @@ public class Route53Manager {
         return rrValue.substring(SRV_DUMMY_PREFIX.length());
     }
 
-    public Stream<String> listSRVRecordsLabel() {
-        var result = route53AsyncClient.listResourceRecordSets(
+    private Stream<ResourceRecordSet> listAllRecords(RRType rrType) {
+        return route53AsyncClient.listResourceRecordSets(
                 ListResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
-                        .startRecordType(RRType.SRV)
+                        .startRecordType(rrType)
                         // Surprisingly, if we don't include .startRecordName() we get a 400 - InvalidInputException
                         .startRecordName(FIRST_LETTER_FIRST_POSSIBLE_LEXICOGRAPHICAL_DOMAIN_NAME_ROUTE53_ESCAPED)
                         .build()
-        ).join();
+        ).join()
+        .resourceRecordSets().stream();
+    }
 
-        return result.resourceRecordSets().stream()
+    public Stream<String> listSRVRecordsLabel() {
+        return listAllRecords(RRType.SRV)
                 // Exclude non-dyna53 SRV records
                 .filter(resourceRecordSet ->
                         resourceRecordSet.resourceRecords().stream()
@@ -169,5 +172,15 @@ public class Route53Manager {
 
     private String route53FullLabel2Label(String value) {
         return value.substring(0, value.length() - ".".length() - zoneDomainName.length()  - 1);
+    }
+
+    public Stream<String> listTXTRecordsWithLabel(String label, String namePrefixRegex) {
+        return listAllRecords(RRType.TXT)
+                .filter(resourceRecordSet ->
+                        resourceRecordSet.name().endsWith("." + label + "." + zoneDomainName + ".")
+                        && resourceRecordSet.name().split("\\.")[0].matches(namePrefixRegex)
+                ).flatMap(resourceRecordSet -> resourceRecordSet.resourceRecords().stream())
+                .map(resourceRecord -> txtResourceValue2String(resourceRecord.value()))
+                ;
     }
 }

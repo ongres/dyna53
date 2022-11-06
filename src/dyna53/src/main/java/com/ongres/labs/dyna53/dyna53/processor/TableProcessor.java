@@ -95,6 +95,10 @@ public class TableProcessor {
                 );
     }
 
+    public void checkTableIsValid(String tableName) throws ResourceNotFoundException {
+        tableDefinition(tableName);
+    }
+
     public TableDescription queryTableDescription(String tableName) throws ResourceNotFoundException {
         return tableDescriptionFromTableDefinition(
                 tableDefinition(tableName)
@@ -137,7 +141,7 @@ public class TableProcessor {
     public TimeToLiveDescription timeToLiveDescription(DescribeTimeToLiveRequest describeTimeToLiveRequest)
     throws ResourceNotFoundException {
         // Find table definition, otherwise it throws ResourceNotFoundException
-        tableDefinition(describeTimeToLiveRequest.tableName());
+        checkTableIsValid(describeTimeToLiveRequest.tableName());
 
         // Method is not really implemented, return always DISABLED
         return new TimeToLiveDescription(TimeToLiveStatus.DISABLED);

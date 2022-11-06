@@ -18,7 +18,8 @@ public enum DynamoOperation {
     DESCRIBE_TABLE("DescribeTable"),
     PUT_ITEM("PutItem"),
     LIST_TABLES("ListTables"),
-    DESCRIBE_TIME_TO_LIVE("DescribeTimeToLive")
+    DESCRIBE_TIME_TO_LIVE("DescribeTimeToLive"),
+    SCAN("Scan")
     ;
 
     private final String value;

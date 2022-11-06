@@ -23,6 +23,8 @@ public class Dynamo2Route53 {
 
     private static final HexFormat HEX_FORMAT_LOWERCASE_NO_SEPARATORS_PREFIXES = HexFormat.of();
 
+    public static final String ITEM_ROUTE53_LABEL_REGEX = "[0-9a-f]{56}";
+
     @Inject
     Jsonb jsonb;
 
@@ -58,6 +60,11 @@ public class Dynamo2Route53 {
     public String serializeResourceRecord(String value) {
         // TODO: escape characters, cut length, split into 255-char chunks...
         return serialize(value);
+    }
+
+    public String deserializeResourceRecord(String value) {
+        // TODO: transform escaped characters, re-assemble 255-char chunks...
+        return deserialize(value);
     }
 
     private String serialize(String value) {

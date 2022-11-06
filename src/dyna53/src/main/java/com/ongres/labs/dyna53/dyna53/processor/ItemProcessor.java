@@ -15,15 +15,17 @@ import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
 import com.ongres.labs.dyna53.dynamohttp.exception.ValidationException;
 import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
+import com.ongres.labs.dyna53.dynamohttp.request.ScanRequest;
 import com.ongres.labs.dyna53.route53.Route53Manager;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.json.bind.Jsonb;
+import java.util.stream.Stream;
 
 
 @ApplicationScoped
-public class PutItemProcessor {
+public class ItemProcessor {
     @Inject
     Route53Manager route53Manager;
 
@@ -79,5 +81,12 @@ public class PutItemProcessor {
                     " expected: " + tableKeyDefinition.keyType() + " actual: " + itemAttribute.get().type()
             );
         }
+    }
+
+    public Stream<Item> scan(ScanRequest scanRequest) {
+        return route53Manager.listTXTRecordsWithLabel(
+                scanRequest.tableName(), Dynamo2Route53.ITEM_ROUTE53_LABEL_REGEX
+        ).map(value -> dynamo2Route53.deserializeResourceRecord(value))
+        .map(value -> jsonb.fromJson(value, Item.class));
     }
 }
