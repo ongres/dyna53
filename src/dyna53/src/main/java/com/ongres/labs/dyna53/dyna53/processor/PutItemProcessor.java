@@ -58,7 +58,7 @@ public class PutItemProcessor {
         var serializedItem = dynamo2Route53.serializeResourceRecord(
                 jsonb.toJson(item, Item.class)
         );
-        var hkLabel = Dynamo2Route53.toValidRoute53Label(
+        var hkLabel = Dynamo2Route53.hashHK2label(
                 item.getAttribute(hashKey.keyName()).get().value()
         );
         route53Manager.createSingleValuedTXTResource(hkLabel, dyna53TableName, serializedItem);
