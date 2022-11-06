@@ -1,0 +1,17 @@
+/*
+ * Copyright (C) 2022 OnGres, Inc.
+ * SPDX-License-Identifier: AGPL-3.0
+ */
+
+
+package com.ongres.labs.dyna53.dynamohttp.response;
+
+
+import com.ongres.labs.dyna53.dynamohttp.model.TimeToLiveDescription;
+
+import javax.json.bind.annotation.JsonbProperty;
+
+
+public record DescribeTimeToLiveResponse(
+    @JsonbProperty("TimeToLiveDescription") TimeToLiveDescription timeToLiveDescription
+) implements DynamoResponse {}

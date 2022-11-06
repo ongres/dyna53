@@ -12,11 +12,9 @@ import com.ongres.labs.dyna53.dyna53.TableDefinition;
 import com.ongres.labs.dyna53.dyna53.TableDefinitionCache;
 import com.ongres.labs.dyna53.dyna53.TableKeyDefinition;
 import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
-import com.ongres.labs.dyna53.dynamohttp.model.AttributeDefinition;
-import com.ongres.labs.dyna53.dynamohttp.model.KeySchema;
-import com.ongres.labs.dyna53.dynamohttp.model.KeyType;
-import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
+import com.ongres.labs.dyna53.dynamohttp.model.*;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
+import com.ongres.labs.dyna53.dynamohttp.request.DescribeTimeToLiveRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest;
 import com.ongres.labs.dyna53.route53.Route53Manager;
 
@@ -88,14 +86,19 @@ public class TableProcessor {
                 );
     }
 
-    public TableDescription queryTableDescription(String tableName) throws ResourceNotFoundException {
+    public TableDefinition tableDefinition(String tableName) throws ResourceNotFoundException {
         return tableDefinitionCache.tableDefinition(tableName)
-                .map(tableDefinition -> tableDescriptionFromTableDefinition(tableDefinition))
                 .orElseThrow(
                         () -> new ResourceNotFoundException(
                                 "Requested resource not found: Table: " + tableName + " not found"
                         )
                 );
+    }
+
+    public TableDescription queryTableDescription(String tableName) throws ResourceNotFoundException {
+        return tableDescriptionFromTableDefinition(
+                tableDefinition(tableName)
+        );
     }
 
     private TableDescription tableDescriptionFromTableDefinition(TableDefinition tableDefinition) {
@@ -129,5 +132,14 @@ public class TableProcessor {
         // listTablesRequest is ignored for now, full list is returned, sorry!
 
         return route53Manager.listSRVRecordsLabel();
+    }
+
+    public TimeToLiveDescription timeToLiveDescription(DescribeTimeToLiveRequest describeTimeToLiveRequest)
+    throws ResourceNotFoundException {
+        // Find table definition, otherwise it throws ResourceNotFoundException
+        tableDefinition(describeTimeToLiveRequest.tableName());
+
+        // Method is not really implemented, return always DISABLED
+        return new TimeToLiveDescription(TimeToLiveStatus.DISABLED);
     }
 }

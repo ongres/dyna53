@@ -12,10 +12,7 @@ import com.ongres.labs.dyna53.dyna53.processor.TableProcessor;
 import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
 import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
 import com.ongres.labs.dyna53.dynamohttp.model.TableDescription;
-import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
-import com.ongres.labs.dyna53.dynamohttp.request.DescribeTableRequest;
-import com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest;
-import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
+import com.ongres.labs.dyna53.dynamohttp.request.*;
 import com.ongres.labs.dyna53.dynamohttp.response.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +61,7 @@ public class DynamoHTTP {
             case DESCRIBE_TABLE -> describeTable(request);
             case LIST_TABLES -> listTables(request);
             case PUT_ITEM -> putItem(request);
+            case DESCRIBE_TIME_TO_LIVE -> describeTimeToLive(request);
         };
     }
 
@@ -103,5 +101,14 @@ public class DynamoHTTP {
         putItemProcessor.putItem(putItemRequest);
 
         return new PutItemResponse();
+    }
+
+    // TTL is not really implemented, so returning always a dummy response for enhanced compatibility with tools
+    private DescribeTimeToLiveResponse describeTimeToLive(String request) throws ResourceNotFoundException {
+        var describeTimeToLiveRequest = jsonb.fromJson(request, DescribeTimeToLiveRequest.class);
+
+        return new DescribeTimeToLiveResponse(
+                tableProcessor.timeToLiveDescription(describeTimeToLiveRequest)
+        );
     }
 }
