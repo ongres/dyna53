@@ -40,7 +40,7 @@ public class Route53Manager {
         var result = route53AsyncClient.listResourceRecordSets(
                 ListResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
-                        .startRecordName(label + "." + zoneDomainName)
+                        .startRecordName(recordNameFromLabel(label))
                         .startRecordType(rrType)
                         .maxItems("" + 1)
                         .build()
@@ -54,10 +54,14 @@ public class Route53Manager {
             return Optional.empty();
         }
 
-        return Optional.of(
-                // TODO: hackish, no error checks
-                resourceRecordsSetList.get(0).resourceRecords().get(0).value()
-        );
+        var resourceRecordSet = resourceRecordsSetList.get(0);
+
+        return resourceRecordSet.name().isEmpty() || (! resourceRecordSet.name().equals(recordNameFromLabel(label))) ?
+                Optional.empty() :
+                Optional.of(
+                        // TODO: hackish, no error checks
+                        resourceRecordSet.resourceRecords().get(0).value()
+                );
     }
 
     public Optional<String> getSingleValuedTXTResource(String label) {
@@ -66,6 +70,10 @@ public class Route53Manager {
 
     public Optional<String> getSingleValuedSRVResource(String label) {
         return getSingleValuedResource(label, RRType.SRV).map(r -> srvResourceValue2String(r));
+    }
+
+    private String recordNameFromLabel(String label) {
+        return label + "." + zoneDomainName + ".";
     }
 
     // TODO: error checking, timeouts, etc
@@ -82,7 +90,7 @@ public class Route53Manager {
                                                         .action(ChangeAction.CREATE)
                                                         .resourceRecordSet(
                                                                 ResourceRecordSet.builder()
-                                                                        .name(label + "." + zoneDomainName)
+                                                                        .name(recordNameFromLabel(label))
                                                                         .type(rrType)
                                                                         .resourceRecords(resourceRecord)
                                                                         .ttl(1L)
