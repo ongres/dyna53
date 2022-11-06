@@ -40,6 +40,11 @@ public class DynamoHTTP {
     @Inject
     PutItemProcessor putItemProcessor;
 
+    private <T> T parseRequest(String request, Class<T> destination) {
+        // TODO: add proper validation, error detection...
+        return jsonb.fromJson(request, destination);
+    }
+
     @POST
     public DynamoResponse dynamoEntrypoint(@HeaderParam("X-Amz-Target") String amzTarget, String request)
     throws DynamoException {
@@ -57,16 +62,15 @@ public class DynamoHTTP {
         }
 
         return switch (operation) {
-            case CREATE_TABLE -> createTable(request);
-            case DESCRIBE_TABLE -> describeTable(request);
-            case LIST_TABLES -> listTables(request);
-            case PUT_ITEM -> putItem(request);
-            case DESCRIBE_TIME_TO_LIVE -> describeTimeToLive(request);
+            case CREATE_TABLE -> createTable(parseRequest(request, CreateTableRequest.class));
+            case DESCRIBE_TABLE -> describeTable(parseRequest(request, DescribeTableRequest.class));
+            case LIST_TABLES -> listTables(parseRequest(request, ListTablesRequest.class));
+            case PUT_ITEM -> putItem(parseRequest(request, PutItemRequest.class));
+            case DESCRIBE_TIME_TO_LIVE -> describeTimeToLive(parseRequest(request, DescribeTimeToLiveRequest.class));
         };
     }
 
-    private CreateTableResponse createTable(String request) {
-        var createTableRequest = jsonb.fromJson(request, CreateTableRequest.class);
+    private CreateTableResponse createTable(CreateTableRequest createTableRequest) {
         tableProcessor.createTable(createTableRequest);
 
         TableDescription tableDescription = null;
@@ -80,33 +84,28 @@ public class DynamoHTTP {
         return new CreateTableResponse(tableDescription);
     }
 
-    private DescribeTableResponse describeTable(String request) throws ResourceNotFoundException {
-        var describeTableRequest = jsonb.fromJson(request, DescribeTableRequest.class);
-
+    private DescribeTableResponse describeTable(DescribeTableRequest describeTableRequest)
+    throws ResourceNotFoundException {
         var tableDescription = tableProcessor.queryTableDescription(describeTableRequest.tableName());
 
         return new DescribeTableResponse(tableDescription);
     }
 
-    private ListTablesResponse listTables(String request) {
-        var listTablesRequest = jsonb.fromJson(request, ListTablesRequest.class);
+    private ListTablesResponse listTables(ListTablesRequest listTablesRequest) {
         var tableNames = tableProcessor.listTables(listTablesRequest);
 
         return new ListTablesResponse(tableNames.toArray(String[]::new));
     }
 
-    private PutItemResponse putItem(String request) throws DynamoException {
-        var putItemRequest = jsonb.fromJson(request, PutItemRequest.class);
-
+    private PutItemResponse putItem(PutItemRequest putItemRequest) throws DynamoException {
         putItemProcessor.putItem(putItemRequest);
 
         return new PutItemResponse();
     }
 
     // TTL is not really implemented, so returning always a dummy response for enhanced compatibility with tools
-    private DescribeTimeToLiveResponse describeTimeToLive(String request) throws ResourceNotFoundException {
-        var describeTimeToLiveRequest = jsonb.fromJson(request, DescribeTimeToLiveRequest.class);
-
+    private DescribeTimeToLiveResponse describeTimeToLive(DescribeTimeToLiveRequest describeTimeToLiveRequest)
+    throws ResourceNotFoundException {
         return new DescribeTimeToLiveResponse(
                 tableProcessor.timeToLiveDescription(describeTimeToLiveRequest)
         );
