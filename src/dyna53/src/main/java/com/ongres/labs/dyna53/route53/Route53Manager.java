@@ -64,8 +64,9 @@ public class Route53Manager {
                 );
     }
 
-    public Optional<String> getSingleValuedTXTResource(String label) {
-        return getSingleValuedResource(label, RRType.TXT).map(r -> txtResourceValue2String(r));
+    public Optional<String> getSingleValuedTXTResource(String label, String subLabel) {
+        return getSingleValuedResource(label + "." + subLabel, RRType.TXT)
+                .map(r -> txtResourceValue2String(r));
     }
 
     public Optional<String> getSingleValuedSRVResource(String label) {

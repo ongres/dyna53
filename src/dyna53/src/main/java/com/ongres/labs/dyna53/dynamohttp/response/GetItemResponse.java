@@ -13,9 +13,7 @@ import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import javax.json.bind.annotation.JsonbProperty;
 
 
-public record ScanResponse(
-        @JsonbProperty("Items") Item[] items,
-        @JsonbProperty("Count") int count,
-        @JsonbProperty("ScannedCount") int scannedCount,
+public record GetItemResponse(
+        @JsonbProperty("Item") Item item,
         @JsonbProperty("ConsumedCapacity") ConsumedCapacity consumedCapacity
 ) implements DynamoResponse {}

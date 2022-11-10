@@ -17,6 +17,7 @@ public enum DynamoOperation {
     CREATE_TABLE("CreateTable"),
     DESCRIBE_TABLE("DescribeTable"),
     PUT_ITEM("PutItem"),
+    GET_ITEM("GetItem"),
     LIST_TABLES("ListTables"),
     DESCRIBE_TIME_TO_LIVE("DescribeTimeToLive"),
     SCAN("Scan")

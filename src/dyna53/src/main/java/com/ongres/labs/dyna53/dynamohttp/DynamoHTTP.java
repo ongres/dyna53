@@ -67,6 +67,7 @@ public class DynamoHTTP {
             case DESCRIBE_TABLE -> describeTable(parseRequest(request, DescribeTableRequest.class));
             case LIST_TABLES -> listTables(parseRequest(request, ListTablesRequest.class));
             case PUT_ITEM -> putItem(parseRequest(request, PutItemRequest.class));
+            case GET_ITEM -> getItem(parseRequest(request, GetItemRequest.class));
             case DESCRIBE_TIME_TO_LIVE -> describeTimeToLive(parseRequest(request, DescribeTimeToLiveRequest.class));
             case SCAN -> scan(parseRequest(request, ScanRequest.class));
         };
@@ -103,6 +104,12 @@ public class DynamoHTTP {
         itemProcessor.putItem(putItemRequest);
 
         return new PutItemResponse();
+    }
+
+    private GetItemResponse getItem(GetItemRequest getItemRequest) throws DynamoException {
+        var item = itemProcessor.getItem(getItemRequest);
+
+        return new GetItemResponse(item, null);
     }
 
     // TTL is not really implemented, so returning always a dummy response for enhanced compatibility with tools

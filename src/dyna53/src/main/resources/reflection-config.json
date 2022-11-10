@@ -2,21 +2,28 @@
   { "name" : "com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.request.DescribeTableRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.request.DescribeTimeToLiveRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+  { "name" : "com.ongres.labs.dyna53.dynamohttp.request.GetItemRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.request.ScanRequest", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+
   { "name" : "com.ongres.labs.dyna53.dynamohttp.response.CreateTableResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.response.DescribeTableResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.response.DescribeTimeToLiveResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+  { "name" : "com.ongres.labs.dyna53.dynamohttp.response.GetItemResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.response.ListTablesResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.response.PutItemResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.response.ScanResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+
   { "name" : "com.ongres.labs.dyna53.dynamohttp.model.AttributeDefinition", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.model.ErrorResponse", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.model.KeySchema", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.model.TableDescription", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dynamohttp.model.TimeToLiveDescription", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+
   { "name" : "com.ongres.labs.dyna53.dyna53.TableDefinition", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dyna53.TableKeyDefinition", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+  
+
   { "name" : "software.amazon.awssdk.services.route53.internal.Route53IdInterceptor", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true }
 ]
