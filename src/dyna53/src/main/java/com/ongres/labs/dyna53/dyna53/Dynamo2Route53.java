@@ -58,21 +58,21 @@ public class Dynamo2Route53 {
     }
 
     public String serializeResourceRecord(String value) {
-        // TODO: escape characters, cut length, split into 255-char chunks...
         return serialize(value);
     }
 
     public String deserializeResourceRecord(String value) {
-        // TODO: transform escaped characters, re-assemble 255-char chunks...
         return deserialize(value);
     }
 
     private String serialize(String value) {
         // To avoid having to escape double quote in JSON ('"'), we convert to single quote. Better for Route53
+        // TODO: this is not 100% correct, what if there's a double quote embedded and escaped in the string?
         return value.replace('"', '\'');
     }
 
     private String deserialize(String value) {
+        // TODO: this is not 100% correct, what if there's a double quote embedded and escaped in the string?
         return value.replace('\'', '"');
     }
 

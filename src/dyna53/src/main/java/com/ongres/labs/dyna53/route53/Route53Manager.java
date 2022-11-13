@@ -104,11 +104,12 @@ public class Route53Manager {
 
     private CompletableFuture<ChangeResourceRecordSetsResponse> createSingleValuedTXTResource(
             String label, String value
-    ) {
+    ) throws ResourceRecordValue.InvalidValueException {
         return createAsyncResourceRecord(label, RRType.TXT, singleValuedResource(value));
     }
 
-    public void createSingleValuedTXTResource(String subLabel, String label, String value) {
+    public void createSingleValuedTXTResource(String subLabel, String label, String value)
+    throws ResourceRecordValue.InvalidValueException {
         createSingleValuedTXTResource(subLabel + "." + label, value).join();
     }
 
@@ -118,25 +119,19 @@ public class Route53Manager {
         ).join();
     }
 
-    private ResourceRecord singleValuedResource(String value) {
-        var stringBuilder = new StringBuilder()
-                .append("\"")
-                // TODO: escape needed characters
-                .append(value)
-                .append("\"")
-        ;
+    private ResourceRecord singleValuedResource(String value) throws ResourceRecordValue.InvalidValueException {
+        var valueRoute53Formatted = ResourceRecordValue.toRoute53Value(value);
 
         return ResourceRecord.builder()
-                // TODO: if value.length() > 255 it needs to be split into multiple strings
-                .value(stringBuilder.toString())
+                .value(valueRoute53Formatted)
                 .build();
     }
 
     /**
-     * Route53 resource record TXT values are always quoted. This method unquotes them.
+     * Route53 resource record TXT values are chunked, escaped, etc. This method reconstructs back the original string
      */
     private String txtResourceValue2String(String rrValue) {
-        return rrValue.substring(1, rrValue.length() - 1);
+        return ResourceRecordValue.fromRoute53Value(rrValue);
     }
 
     private ResourceRecord value2DummySRVResource(String value) {

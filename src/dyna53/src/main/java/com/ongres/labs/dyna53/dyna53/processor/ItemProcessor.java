@@ -18,6 +18,7 @@ import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import com.ongres.labs.dyna53.dynamohttp.request.GetItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ScanRequest;
+import com.ongres.labs.dyna53.route53.ResourceRecordValue;
 import com.ongres.labs.dyna53.route53.Route53Manager;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -89,7 +90,11 @@ public class ItemProcessor {
         var hkLabel = Dynamo2Route53.hashHK2label(
                 item.getAttribute(hashKeyName).get().value()
         );
-        route53Manager.createSingleValuedTXTResource(hkLabel, dyna53TableName, serializedItem);
+        try {
+            route53Manager.createSingleValuedTXTResource(hkLabel, dyna53TableName, serializedItem);
+        } catch (ResourceRecordValue.InvalidValueException e) {
+            throw new ValidationException("Item size is too large (max size = 4,000 chars minus escape and formatting)");
+        }
     }
 
     public Item getItem(GetItemRequest getItemRequest) throws DynamoException {
