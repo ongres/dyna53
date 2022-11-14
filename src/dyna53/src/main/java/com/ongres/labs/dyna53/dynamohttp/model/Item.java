@@ -7,6 +7,9 @@
 package com.ongres.labs.dyna53.dynamohttp.model;
 
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -26,5 +29,10 @@ public class Item {
 
     public void attributes(BiConsumer<String,Attribute> attributesConsumer) {
         itemTypeValues.forEach(attributesConsumer);
+    }
+
+    @JsonAnyGetter
+    public Map<String, Attribute> itemMap() {
+        return Collections.unmodifiableMap(itemTypeValues);
     }
 }

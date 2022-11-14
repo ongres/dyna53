@@ -7,9 +7,10 @@
 package com.ongres.labs.dyna53.dyna53;
 
 
+import com.ongres.labs.dyna53.dyna53.jackson.Dyna53ObjectMapper;
+
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.json.bind.Jsonb;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,7 +27,7 @@ public class Dynamo2Route53 {
     public static final String ITEM_ROUTE53_LABEL_REGEX = "[0-9a-f]{56}";
 
     @Inject
-    Jsonb jsonb;
+    Dyna53ObjectMapper dyna53ObjectMapper;
 
     public static String toValidRoute53Label(String value) {
         var noStartHyphen = value.startsWith("-") ? value.substring(1) : value;
@@ -41,39 +42,16 @@ public class Dynamo2Route53 {
     }
 
     public String serializeTableDefinition(TableDefinition tableDefinition) {
-        return serialize(
-                jsonb.toJson(tableDefinition)
-        );
+        return dyna53ObjectMapper.writeValueAsStringRuntimeException(tableDefinition.keysDefinition());
     }
 
     public TableDefinition deserializeTableDefinition(String tableName, String serializedTableDefinition) {
-        var tableDefinition = jsonb.fromJson(
-                deserialize(serializedTableDefinition),
-                TableDefinition.class
+        var tableDefinition = dyna53ObjectMapper.readValueRuntimeException(
+                serializedTableDefinition,
+                TableKeysDefinition.class
         );
 
-        tableDefinition.setTableName(tableName);
-
-        return tableDefinition;
-    }
-
-    public String serializeResourceRecord(String value) {
-        return serialize(value);
-    }
-
-    public String deserializeResourceRecord(String value) {
-        return deserialize(value);
-    }
-
-    private String serialize(String value) {
-        // To avoid having to escape double quote in JSON ('"'), we convert to single quote. Better for Route53
-        // TODO: this is not 100% correct, what if there's a double quote embedded and escaped in the string?
-        return value.replace('"', '\'');
-    }
-
-    private String deserialize(String value) {
-        // TODO: this is not 100% correct, what if there's a double quote embedded and escaped in the string?
-        return value.replace('\'', '"');
+        return new TableDefinition(tableName, tableDefinition);
     }
 
     /*

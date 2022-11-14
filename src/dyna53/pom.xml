@@ -48,6 +48,11 @@
       <artifactId>quarkus-resteasy-reactive-jsonb</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-jackson</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>route53</artifactId>
       <version>${aws.sdk.version}</version>

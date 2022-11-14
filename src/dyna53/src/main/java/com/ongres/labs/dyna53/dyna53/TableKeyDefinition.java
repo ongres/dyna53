@@ -7,12 +7,11 @@
 package com.ongres.labs.dyna53.dyna53;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ongres.labs.dyna53.dynamohttp.model.KeyAttributeType;
-
-import javax.json.bind.annotation.JsonbProperty;
 
 
 public record TableKeyDefinition(
-        @JsonbProperty("n") String keyName,
-        @JsonbProperty("t") KeyAttributeType keyType
+        @JsonProperty("n") String keyName,
+        @JsonProperty("t") KeyAttributeType keyType
 ){}

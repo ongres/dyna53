@@ -7,10 +7,7 @@
 package com.ongres.labs.dyna53.dyna53.processor;
 
 
-import com.ongres.labs.dyna53.dyna53.Dynamo2Route53;
-import com.ongres.labs.dyna53.dyna53.TableDefinition;
-import com.ongres.labs.dyna53.dyna53.TableDefinitionCache;
-import com.ongres.labs.dyna53.dyna53.TableKeyDefinition;
+import com.ongres.labs.dyna53.dyna53.*;
 import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
 import com.ongres.labs.dyna53.dynamohttp.model.*;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
@@ -37,8 +34,8 @@ public class TableProcessor {
 
     public void createTable(CreateTableRequest createTableRequest) {
         var tableDefinition = tableDefinitionFromRequest(createTableRequest);
-        var serializedTableDefinition = dynamo2Route53.serializeTableDefinition(tableDefinition);
-        route53Manager.createDummySRVResource(tableDefinition.getTableName(), serializedTableDefinition);
+        var serializedTableKeysDefinition = dynamo2Route53.serializeTableDefinition(tableDefinition);
+        route53Manager.createDummySRVResource(tableDefinition.tableName(), serializedTableKeysDefinition);
     }
 
     private TableDefinition tableDefinitionFromRequest(CreateTableRequest createTableRequest) {
@@ -63,7 +60,10 @@ public class TableProcessor {
         var tableName = createTableRequest.tableName();
         var route53Label = Dynamo2Route53.toValidRoute53Label(tableName);
 
-        return new TableDefinition(route53Label, hk, Optional.ofNullable(rk));
+        return new TableDefinition(
+                route53Label,
+                new TableKeysDefinition(hk, Optional.ofNullable(rk))
+        );
     }
 
     private TableKeyDefinition extractTableKeyDefinition(String keyName, AttributeDefinition[] attributeDefinitions) {
@@ -108,8 +108,9 @@ public class TableProcessor {
     private TableDescription tableDescriptionFromTableDefinition(TableDefinition tableDefinition) {
         AttributeDefinition[] attributeDefinitions;
         KeySchema[] keySchema;
-        var hashKeyDefinition = tableDefinition.getHashKey();
-        var rangeKeyDefinition = tableDefinition.getRangeKey();
+        var keysDefinition = tableDefinition.keysDefinition();
+        var hashKeyDefinition = keysDefinition.hashKey();
+        var rangeKeyDefinition = keysDefinition.rangeKey();
 
         if(rangeKeyDefinition.isPresent()) {
             attributeDefinitions = new AttributeDefinition[] {
@@ -129,7 +130,7 @@ public class TableProcessor {
             };
         }
 
-        return new TableDescription(tableDefinition.getTableName(), attributeDefinitions, keySchema);
+        return new TableDescription(tableDefinition.tableName(), attributeDefinitions, keySchema);
     }
 
     public Stream<String> listTables(ListTablesRequest listTablesRequest) {

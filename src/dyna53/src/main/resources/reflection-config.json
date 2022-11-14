@@ -23,6 +23,7 @@
 
   { "name" : "com.ongres.labs.dyna53.dyna53.TableDefinition", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   { "name" : "com.ongres.labs.dyna53.dyna53.TableKeyDefinition", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
+  { "name" : "com.ongres.labs.dyna53.dyna53.TableKeysDefinition", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true },
   
 
   { "name" : "software.amazon.awssdk.services.route53.internal.Route53IdInterceptor", "allDeclaredConstructors" : true, "allPublicConstructors" : true, "allDeclaredMethods" : true, "allPublicMethods" : true, "allDeclaredFields" : true, "allPublicFields" : true }
