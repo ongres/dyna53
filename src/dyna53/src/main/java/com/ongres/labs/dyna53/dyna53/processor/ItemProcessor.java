@@ -13,14 +13,17 @@ import com.ongres.labs.dyna53.dyna53.TableDefinitionCache;
 import com.ongres.labs.dyna53.dyna53.TableKeyDefinition;
 import com.ongres.labs.dyna53.dyna53.jackson.Dyna53ObjectMapper;
 import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
+import com.ongres.labs.dyna53.dynamohttp.exception.ProvisionedThroughputExceededException;
 import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
 import com.ongres.labs.dyna53.dynamohttp.exception.ValidationException;
 import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import com.ongres.labs.dyna53.dynamohttp.request.GetItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ScanRequest;
-import com.ongres.labs.dyna53.route53.ResourceRecordValue;
+import com.ongres.labs.dyna53.route53.InvalidValueException;
+import com.ongres.labs.dyna53.route53.ResourceRecordException;
 import com.ongres.labs.dyna53.route53.Route53Manager;
+import com.ongres.labs.dyna53.route53.TimeoutException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -31,9 +34,6 @@ import java.util.stream.Stream;
 public class ItemProcessor {
     @Inject
     Route53Manager route53Manager;
-
-    @Inject
-    Dynamo2Route53 dynamo2Route53;
 
     @Inject
     TableDefinitionCache tableDefinitionCache;
@@ -90,9 +90,15 @@ public class ItemProcessor {
                 item.getAttribute(hashKeyName).get().value()
         );
         try {
-            route53Manager.createSingleValuedTXTResource(hkLabel, dyna53TableName, jsonItem);
-        } catch (ResourceRecordValue.InvalidValueException e) {
-            throw new ValidationException("Item size is too large (max size = 4,000 chars minus escape and formatting)");
+            route53Manager.upsertSingleValuedTXTResource(hkLabel, dyna53TableName, jsonItem);
+            //TODO: call createSingleValuedTXTResource() instead when Conditional expression on item existing is supported
+        } catch (InvalidValueException e) {
+            throw new ValidationException(e.getMessage());
+        } catch (ResourceRecordException e) {
+            // TODO: ignored for now. Will be useful to implement ConditionalExpression on item existing, for example
+        } catch (TimeoutException e) {
+            // User can retry, so let's simulate a provision exceeded exception:
+            throw new ProvisionedThroughputExceededException("Operation is retryable");
         }
     }
 

@@ -8,12 +8,17 @@ package com.ongres.labs.dyna53.dyna53.processor;
 
 
 import com.ongres.labs.dyna53.dyna53.*;
+import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
+import com.ongres.labs.dyna53.dynamohttp.exception.ProvisionedThroughputExceededException;
+import com.ongres.labs.dyna53.dynamohttp.exception.ResourceInUseException;
 import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
 import com.ongres.labs.dyna53.dynamohttp.model.*;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.DescribeTimeToLiveRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest;
+import com.ongres.labs.dyna53.route53.ResourceRecordException;
 import com.ongres.labs.dyna53.route53.Route53Manager;
+import com.ongres.labs.dyna53.route53.TimeoutException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -23,6 +28,11 @@ import java.util.stream.Stream;
 
 @ApplicationScoped
 public class TableProcessor {
+    // Table definition is stored as a SRV records. They require a priority, weight, port --which are ignored by dyna53
+    private static final int ROUTE53_DUMMY_SRV_RECORD_PRIORITY = 80;
+    private static final int ROUTE53_DUMMY_SRV_RECORD_WEIGHT = 71;
+    private static final int ROUTE53_DUMMY_SRV_RECORD_PORT = 5432;
+
     @Inject
     Route53Manager route53Manager;
 
@@ -32,10 +42,22 @@ public class TableProcessor {
     @Inject
     TableDefinitionCache tableDefinitionCache;
 
-    public void createTable(CreateTableRequest createTableRequest) {
+    public void createTable(CreateTableRequest createTableRequest) throws DynamoException {
         var tableDefinition = tableDefinitionFromRequest(createTableRequest);
         var serializedTableKeysDefinition = dynamo2Route53.serializeTableDefinition(tableDefinition);
-        route53Manager.createDummySRVResource(tableDefinition.tableName(), serializedTableKeysDefinition);
+        try {
+            route53Manager.createSRVResource(
+                    tableDefinition.tableName(),
+                    serializedTableKeysDefinition,
+                    ROUTE53_DUMMY_SRV_RECORD_PRIORITY,
+                    ROUTE53_DUMMY_SRV_RECORD_WEIGHT,
+                    ROUTE53_DUMMY_SRV_RECORD_PORT
+            );
+        } catch (TimeoutException e) {
+            throw new ProvisionedThroughputExceededException("Operation is retryable");
+        } catch (ResourceRecordException e) {
+            throw new ResourceInUseException("Table already exists: " + tableDefinition.tableName());
+        }
     }
 
     private TableDefinition tableDefinitionFromRequest(CreateTableRequest createTableRequest) {
@@ -78,7 +100,12 @@ public class TableProcessor {
 
     public Optional<TableDefinition> tableDefinitionFromRoute53(String label) {
         return route53Manager
-                .getSingleValuedSRVResource(label)
+                .getSingleValuedSRVResource(
+                        ROUTE53_DUMMY_SRV_RECORD_PRIORITY,
+                        ROUTE53_DUMMY_SRV_RECORD_WEIGHT,
+                        ROUTE53_DUMMY_SRV_RECORD_PORT,
+                        label
+                )
                 .map(
                         serializedTableDefinition -> dynamo2Route53.deserializeTableDefinition(
                                 label, serializedTableDefinition
@@ -136,7 +163,9 @@ public class TableProcessor {
     public Stream<String> listTables(ListTablesRequest listTablesRequest) {
         // listTablesRequest is ignored for now, full list is returned, sorry!
 
-        return route53Manager.listSRVRecordsLabel();
+        return route53Manager.listSRVRecordsLabel(
+                ROUTE53_DUMMY_SRV_RECORD_PRIORITY, ROUTE53_DUMMY_SRV_RECORD_WEIGHT, ROUTE53_DUMMY_SRV_RECORD_PORT
+        );
     }
 
     public TimeToLiveDescription timeToLiveDescription(DescribeTimeToLiveRequest describeTimeToLiveRequest)

@@ -24,16 +24,6 @@ public class ResourceRecordValue {
             (TXT_VALUE_MAX_LENGTH_CHARS / TXT_VALUE_MAX_CHENK_LENGTH) + 1
         ) * "\" \"".length();
 
-    public static class InvalidValueException extends Exception {
-        public InvalidValueException(String message) {
-            super(message);
-        }
-
-        public static InvalidValueException valueTooLongException() {
-            return new InvalidValueException("Value too long, max length = " + TXT_VALUE_MAX_LENGTH_CHARS + " chars");
-        }
-    }
-
     public static String toRoute53Value(String value) throws InvalidValueException {
         if(value.length() > TXT_VALUE_MAX_LENGTH_CHARS) {
             throw InvalidValueException.valueTooLongException();

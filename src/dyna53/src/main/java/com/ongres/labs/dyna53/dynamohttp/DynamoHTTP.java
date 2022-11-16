@@ -73,7 +73,7 @@ public class DynamoHTTP {
         };
     }
 
-    private CreateTableResponse createTable(CreateTableRequest createTableRequest) {
+    private CreateTableResponse createTable(CreateTableRequest createTableRequest) throws DynamoException {
         tableProcessor.createTable(createTableRequest);
 
         TableDescription tableDescription = null;
