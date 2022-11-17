@@ -8,17 +8,15 @@ package com.ongres.labs.dyna53.dyna53.processor;
 
 
 import com.ongres.labs.dyna53.dyna53.*;
-import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
-import com.ongres.labs.dyna53.dynamohttp.exception.ProvisionedThroughputExceededException;
-import com.ongres.labs.dyna53.dynamohttp.exception.ResourceInUseException;
-import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
+import com.ongres.labs.dyna53.dynamohttp.exception.*;
 import com.ongres.labs.dyna53.dynamohttp.model.*;
 import com.ongres.labs.dyna53.dynamohttp.request.CreateTableRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.DescribeTimeToLiveRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ListTablesRequest;
-import com.ongres.labs.dyna53.route53.ResourceRecordException;
+import com.ongres.labs.dyna53.route53.exception.ResourceRecordException;
 import com.ongres.labs.dyna53.route53.Route53Manager;
-import com.ongres.labs.dyna53.route53.TimeoutException;
+import com.ongres.labs.dyna53.route53.exception.Route53Exception;
+import com.ongres.labs.dyna53.route53.exception.TimeoutException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -57,6 +55,8 @@ public class TableProcessor {
             throw new ProvisionedThroughputExceededException("Operation is retryable");
         } catch (ResourceRecordException e) {
             throw new ResourceInUseException("Table already exists: " + tableDefinition.tableName());
+        } catch (Route53Exception e) {
+            throw new InternalErrorException("Internal error");
         }
     }
 

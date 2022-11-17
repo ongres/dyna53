@@ -15,7 +15,8 @@ public enum ErrorResponseType {
     RESOURCE_NOT_FOUND_EXCEPTION("com.amazonaws.dynamodb.v20120810#ResourceNotFoundException"),
     RESOURCE_IN_USE_EXCEPTION("com.amazonaws.dynamodb.v20120810#ResourceInUseException"),
     PROVISIONED_THROUGHPUT_EXCEEDED_EXCEPTION("com.amazonaws.dynamodb.v20111205#ProvisionedThroughputExceededException"),
-    VALIDATION_EXCEPTION("com.amazon.coral.validate#ValidationException")
+    VALIDATION_EXCEPTION("com.amazon.coral.validate#ValidationException"),
+    INTERNAL_SERVER_ERROR("com.amazonaws.dynamodb.v20120810#InternalFailure")
     ;
 
     private static final Map<String,ErrorResponseType> INSTANCES_BY_VALUE = Arrays

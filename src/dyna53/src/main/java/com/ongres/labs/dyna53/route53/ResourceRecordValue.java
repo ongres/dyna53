@@ -7,6 +7,8 @@
 package com.ongres.labs.dyna53.route53;
 
 
+import com.ongres.labs.dyna53.route53.exception.InvalidValueException;
+
 /* A class to encapsulates the caveats of writing/reading a String to a Route53 record.
  * @see https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/ResourceRecordTypes.html#TXTFormat for authoritative
  * information.

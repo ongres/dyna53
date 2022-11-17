@@ -4,10 +4,10 @@
  */
 
 
-package com.ongres.labs.dyna53.route53;
+package com.ongres.labs.dyna53.route53.exception;
 
 
-public class TimeoutException extends Exception {
+public class TimeoutException extends Route53Exception {
     public TimeoutException() {
         super();
     }

@@ -4,10 +4,10 @@
  */
 
 
-package com.ongres.labs.dyna53.route53;
+package com.ongres.labs.dyna53.route53.exception;
 
 
-public class ResourceRecordException extends Exception {
+public class ResourceRecordException extends Route53Exception {
     public ResourceRecordException(String message) {
         super(message);
     }

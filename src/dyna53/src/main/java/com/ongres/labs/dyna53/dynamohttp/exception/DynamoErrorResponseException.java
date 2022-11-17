@@ -7,6 +7,7 @@
 package com.ongres.labs.dyna53.dynamohttp.exception;
 
 
+import com.ongres.labs.dyna53.dynamohttp.model.ErrorResponse;
 import com.ongres.labs.dyna53.dynamohttp.model.ErrorResponseType;
 
 public class DynamoErrorResponseException extends DynamoException {
@@ -24,5 +25,9 @@ public class DynamoErrorResponseException extends DynamoException {
 
     public ErrorResponseType getErrorResponseType() {
         return errorResponseType;
+    }
+
+    public ErrorResponse errorResponse() {
+        return new ErrorResponse(errorResponseType, getMessage());
     }
 }

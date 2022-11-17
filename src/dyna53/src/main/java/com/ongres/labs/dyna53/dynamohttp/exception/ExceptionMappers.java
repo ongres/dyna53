@@ -15,11 +15,19 @@ import javax.ws.rs.core.Response;
 
 
 public class ExceptionMappers {
+    private RestResponse<ErrorResponse> mapException(DynamoErrorResponseException exception, Response.Status status) {
+        return RestResponse.status(
+                status,
+                exception.errorResponse()
+        );
+    }
     @ServerExceptionMapper
     public RestResponse<ErrorResponse> mapDynamoException(DynamoErrorResponseException exception) {
-        return RestResponse.status(
-                Response.Status.BAD_REQUEST,
-                new ErrorResponse(exception.getErrorResponseType(), exception.getMessage())
-        );
+        return mapException(exception, Response.Status.BAD_REQUEST);
+    }
+
+    @ServerExceptionMapper
+    public RestResponse<ErrorResponse> mapInternalErrorException(InternalErrorException exception) {
+        return mapException(exception, Response.Status.INTERNAL_SERVER_ERROR);
     }
 }

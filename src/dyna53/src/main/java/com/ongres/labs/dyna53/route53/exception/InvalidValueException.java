@@ -4,10 +4,12 @@
  */
 
 
-package com.ongres.labs.dyna53.route53;
+package com.ongres.labs.dyna53.route53.exception;
 
 
-public class InvalidValueException extends Exception {
+import com.ongres.labs.dyna53.route53.ResourceRecordValue;
+
+public class InvalidValueException extends Route53Exception {
     public InvalidValueException(String message) {
         super(message);
     }

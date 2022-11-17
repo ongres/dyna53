@@ -12,18 +12,16 @@ import com.ongres.labs.dyna53.dyna53.TableDefinition;
 import com.ongres.labs.dyna53.dyna53.TableDefinitionCache;
 import com.ongres.labs.dyna53.dyna53.TableKeyDefinition;
 import com.ongres.labs.dyna53.dyna53.jackson.Dyna53ObjectMapper;
-import com.ongres.labs.dyna53.dynamohttp.exception.DynamoException;
-import com.ongres.labs.dyna53.dynamohttp.exception.ProvisionedThroughputExceededException;
-import com.ongres.labs.dyna53.dynamohttp.exception.ResourceNotFoundException;
-import com.ongres.labs.dyna53.dynamohttp.exception.ValidationException;
+import com.ongres.labs.dyna53.dynamohttp.exception.*;
 import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import com.ongres.labs.dyna53.dynamohttp.request.GetItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ScanRequest;
-import com.ongres.labs.dyna53.route53.InvalidValueException;
-import com.ongres.labs.dyna53.route53.ResourceRecordException;
+import com.ongres.labs.dyna53.route53.exception.InvalidValueException;
+import com.ongres.labs.dyna53.route53.exception.ResourceRecordException;
 import com.ongres.labs.dyna53.route53.Route53Manager;
-import com.ongres.labs.dyna53.route53.TimeoutException;
+import com.ongres.labs.dyna53.route53.exception.Route53Exception;
+import com.ongres.labs.dyna53.route53.exception.TimeoutException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -99,6 +97,9 @@ public class ItemProcessor {
         } catch (TimeoutException e) {
             // User can retry, so let's simulate a provision exceeded exception:
             throw new ProvisionedThroughputExceededException("Operation is retryable");
+        } catch (Route53Exception e) {
+            // Generic one, abort with an error
+            throw new InternalErrorException("Internal error");
         }
     }
 

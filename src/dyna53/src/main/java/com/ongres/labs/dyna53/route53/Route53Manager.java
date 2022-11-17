@@ -7,6 +7,10 @@
 package com.ongres.labs.dyna53.route53;
 
 
+import com.ongres.labs.dyna53.route53.exception.InvalidValueException;
+import com.ongres.labs.dyna53.route53.exception.ResourceRecordException;
+import com.ongres.labs.dyna53.route53.exception.Route53Exception;
+import com.ongres.labs.dyna53.route53.exception.TimeoutException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import software.amazon.awssdk.services.route53.Route53AsyncClient;
 import software.amazon.awssdk.services.route53.model.*;
@@ -74,7 +78,7 @@ public class Route53Manager {
 
     private void actionResourceRecord(
             ChangeAction changeAction, String label, RRType rrType, ResourceRecord resourceRecord
-    ) throws TimeoutException, ResourceRecordException {
+    ) throws Route53Exception {
         var resultThrowable = actionAsyncResourceRecord(
                 changeAction, label, rrType, resourceRecord
         )
@@ -85,9 +89,11 @@ public class Route53Manager {
                 .join();
 
         if(resultThrowable.isPresent()) {
-            if(resultThrowable.get() instanceof InvalidChangeBatchException) {
-                // Potentially it could be other causes, but let's assume here it's the record already exist
-                throw ResourceRecordException.valueAlreadyExistsException();
+            if(resultThrowable.get() instanceof InvalidChangeBatchException e && e.statusCode() == 400) {
+                if(e.getMessage().matches(".* but it already exists.*")) {
+                    throw ResourceRecordException.valueAlreadyExistsException();
+                }
+                throw new Route53Exception(e.getMessage());
             } else if(resultThrowable.get() instanceof TimeoutException) {
                 throw new TimeoutException();
             }
@@ -103,7 +109,7 @@ public class Route53Manager {
     }
 
     private void actionSingleValuedTXTResource(ChangeAction changeAction, String subLabel, String label, String value)
-    throws InvalidValueException, ResourceRecordException, TimeoutException {
+    throws Route53Exception {
         actionResourceRecord(
                 changeAction,
                 labelFrom(subLabel, label),
@@ -112,13 +118,11 @@ public class Route53Manager {
         );
     }
 
-    public void upsertSingleValuedTXTResource(String subLabel, String label, String value)
-    throws InvalidValueException, ResourceRecordException, TimeoutException {
+    public void upsertSingleValuedTXTResource(String subLabel, String label, String value) throws Route53Exception {
         actionSingleValuedTXTResource(ChangeAction.UPSERT, subLabel, label, value);
     }
 
-    public void createSingleValuedTXTResource(String subLabel, String label, String value)
-            throws InvalidValueException, ResourceRecordException, TimeoutException {
+    public void createSingleValuedTXTResource(String subLabel, String label, String value) throws Route53Exception {
         actionSingleValuedTXTResource(ChangeAction.CREATE, subLabel, label, value);
     }
 
@@ -165,7 +169,7 @@ public class Route53Manager {
     }
 
     public void createSRVResource(String label, String value, int priority, int weight, int port)
-    throws TimeoutException, ResourceRecordException {
+    throws Route53Exception {
         actionResourceRecord(ChangeAction.CREATE, label, RRType.SRV, value2SRVResource(priority, weight, port, value));
     }
 
