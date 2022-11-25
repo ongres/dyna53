@@ -78,7 +78,11 @@ public class ResourceRecordValue {
                 throw new InvalidValueException("Only (extended) ASCII characters are supported");
             }
 
-            if(i < 32 || i >= 127) {
+            if(
+                    i < 32                  // DynamoDB docs mention <= 32, but 32 (space) can be written as-is
+                    || i >= 127
+                    || i == ((int) '\\')    // '\' doesn't need escaping; but found errors if followed by lt 3 digits
+            ) {
                 stringBuilder.append("\\").append(Integer.toOctalString(i));
             } else {
                 if(i == ((int) '"')) {
@@ -115,8 +119,9 @@ public class ResourceRecordValue {
             );
             return i + 3;
         } else {
-            // Shouldn't happen, invalid escape sequence
-            return i + 1;
+            // It wasn't really an escape sequence, just the backslash
+            stringBuilder.append('\\');
+            return i;
         }
     }
 
@@ -124,8 +129,13 @@ public class ResourceRecordValue {
         int i = pos;
 
         do {
-            if(chars[i] == '\\' && i < (chars.length - 1)) {
-                i = deserializeEscapeSequence(chars, ++i, stringBuilder);
+            if(chars[i] == '\\') {
+                if(i < (chars.length - 1)) {
+                    i = deserializeEscapeSequence(chars, ++i, stringBuilder);
+                } else {
+                    // Just the backslash at the end of the string
+                    stringBuilder.append('\\');
+                }
             } else if(chars[i] == '"') {
                 return i + 1;
             } else {
