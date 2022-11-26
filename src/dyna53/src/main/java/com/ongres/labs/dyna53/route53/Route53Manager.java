@@ -12,9 +12,12 @@ import com.ongres.labs.dyna53.route53.exception.ResourceRecordException;
 import com.ongres.labs.dyna53.route53.exception.Route53Exception;
 import com.ongres.labs.dyna53.route53.exception.TimeoutException;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.route53.Route53AsyncClient;
 import software.amazon.awssdk.services.route53.model.*;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.Optional;
@@ -33,17 +36,39 @@ public class Route53Manager {
 
     private static final int MAX_VALUES_PER_RESOURCE_RECORD = 400;
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(Route53Manager.class);
+
     @ConfigProperty(name = "hosted_zone")
     String hostedZone;
 
-    @ConfigProperty(name = "zone_domain_name")
     String zoneDomainName;
 
     @Inject
     Route53AsyncClient route53AsyncClient;
 
+    @PostConstruct
+    void getZoneDomainNameFromHostedZone() {
+        var getHostedZoneRequest = GetHostedZoneRequest.builder()
+                .id(hostedZone)
+                .build();
+        
+        route53AsyncClient.getHostedZone(getHostedZoneRequest)
+                .orTimeout(ROUTE53_API_CALLS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .whenComplete(
+                        (response, throwable) -> {
+                            if(null == response) {
+                                throw new RuntimeException("Invalid hosted zone id " + hostedZone + " or error querying it");
+                            }
+
+                            zoneDomainName = response.hostedZone().name();
+                            LOGGER.info("Setting zone domain name to " + zoneDomainName);
+                        }
+                )
+                .join();
+    }
+
     private String recordNameDotEnded(String label) {
-        return label + "." + zoneDomainName + ".";
+        return label + "." + zoneDomainName;
     }
 
     private String labelFrom(String subLabel, String label) {
@@ -51,7 +76,7 @@ public class Route53Manager {
     }
 
     private String route53FullLabel2Label(String value) {
-        return value.substring(0, value.length() - ("." + zoneDomainName).length() - 1);
+        return value.substring(0, value.length() - ("." + zoneDomainName).length());
     }
 
     private CompletableFuture<ChangeResourceRecordSetsResponse> actionAsyncResourceRecord(
@@ -243,7 +268,7 @@ public class Route53Manager {
     public Stream<String> listTXTRecordsWithLabel(String label, String namePrefixRegex) {
         return listAllRecords(RRType.TXT)
                 .filter(resourceRecordSet ->
-                        resourceRecordSet.name().endsWith("." + label + "." + zoneDomainName + ".")
+                        resourceRecordSet.name().endsWith("." + label + "." + zoneDomainName)
                         && resourceRecordSet.name().split("\\.")[0].matches(namePrefixRegex)
                 ).flatMap(resourceRecordSet -> resourceRecordSet.resourceRecords().stream())
                 .map(resourceRecord -> txtResourceValue2String(resourceRecord.value()))
