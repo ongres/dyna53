@@ -11,4 +11,7 @@ public record TableDefinition (
     String tableName,
     TableKeysDefinition keysDefinition
 ) {
+    public boolean hasRangeKey() {
+        return keysDefinition.hasRangeKey();
+    }
 }

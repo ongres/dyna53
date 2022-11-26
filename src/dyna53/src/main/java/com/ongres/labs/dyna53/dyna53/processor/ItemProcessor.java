@@ -17,14 +17,16 @@ import com.ongres.labs.dyna53.dynamohttp.model.Item;
 import com.ongres.labs.dyna53.dynamohttp.request.GetItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.PutItemRequest;
 import com.ongres.labs.dyna53.dynamohttp.request.ScanRequest;
+import com.ongres.labs.dyna53.route53.Route53Manager;
 import com.ongres.labs.dyna53.route53.exception.InvalidValueException;
 import com.ongres.labs.dyna53.route53.exception.ResourceRecordException;
-import com.ongres.labs.dyna53.route53.Route53Manager;
 import com.ongres.labs.dyna53.route53.exception.Route53Exception;
 import com.ongres.labs.dyna53.route53.exception.TimeoutException;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import java.util.Optional;
+import java.util.TreeMap;
 import java.util.stream.Stream;
 
 
@@ -80,16 +82,33 @@ public class ItemProcessor {
         var dyna53TableName = Dynamo2Route53.toValidRoute53Label(putItemRequest.tableName());
         var item = putItemRequest.item();
         var tableDefinition = validateItemGetTableDefinition(dyna53TableName, item);
-
-        // Insert the item
-        var jsonItem = dyna53ObjectMapper.writeValueAsStringRuntimeException(item);
         var hashKeyName = tableDefinition.keysDefinition().hashKey().keyName();
         var hkLabel = Dynamo2Route53.hashHK2label(
                 item.getAttribute(hashKeyName).get().value()
         );
+
+        Stream<Item> itemStream;
+        if(tableDefinition.hasRangeKey()) {
+            var rangeKeyName = tableDefinition.keysDefinition().rangeKey().get().keyName();
+
+            // Read all existing records, sort them and add the new one, then write it all
+            var orderedItems = new TreeMap<String,Item>();
+            getItemsHashAndRangeKey(hkLabel, dyna53TableName)
+                    .forEach(it -> orderedItems.put(it.getAttribute(rangeKeyName).get().value(), it));
+            orderedItems.put(item.getAttribute(rangeKeyName).get().value(), item);
+
+            itemStream = orderedItems.entrySet().stream()
+                    .map(entry -> entry.getValue());
+        } else {
+            itemStream = Stream.of(item);
+        }
+
+        var jsonItems = itemStream
+                .map(it -> dyna53ObjectMapper.writeValueAsStringRuntimeException(it))
+                .toArray(String[]::new);
         try {
-            route53Manager.upsertSingleValuedTXTResource(hkLabel, dyna53TableName, jsonItem);
-            //TODO: call createSingleValuedTXTResource() instead when Conditional expression on item existing is supported
+            route53Manager.upsertMultiValuedTXTResource(hkLabel, dyna53TableName, jsonItems);
+            //TODO: call create...TXTResource() instead when Conditional expression on item existing is supported
         } catch (InvalidValueException e) {
             throw new ValidationException(e.getMessage());
         } catch (ResourceRecordException e) {
@@ -99,25 +118,48 @@ public class ItemProcessor {
             throw new ProvisionedThroughputExceededException("Operation is retryable");
         } catch (Route53Exception e) {
             // Generic one, abort with an error
-            throw new InternalErrorException("Internal error");
+            throw new InternalErrorException("Internal error", e);
         }
+    }
+
+    private Optional<Item> getItemHashKey(String hkLabel, String dyna53TableName) {
+        return route53Manager.getSingleValuedTXTResource(hkLabel, dyna53TableName)
+                .map(deserialized -> dyna53ObjectMapper.readValueRuntimeException(deserialized, Item.class));
+    }
+
+    private Stream<Item> getItemsHashAndRangeKey(String hkLabel, String dyna53TableName) {
+        return route53Manager.getMultiValuedTXTResource(hkLabel, dyna53TableName)
+                .map(deserialized -> dyna53ObjectMapper.readValueRuntimeException(deserialized, Item.class));
     }
 
     public Item getItem(GetItemRequest getItemRequest) throws DynamoException {
         var dyna53TableName = Dynamo2Route53.toValidRoute53Label(getItemRequest.tableName());
         var keyItem = getItemRequest.key();
         var tableDefinition = validateItemGetTableDefinition(dyna53TableName, keyItem);
+        var keysDefinition = tableDefinition.keysDefinition();
 
-        var hashKeyName = tableDefinition.keysDefinition().hashKey().keyName();
+        var hashKeyName = keysDefinition.hashKey().keyName();
         var hkLabel = Dynamo2Route53.hashHK2label(
                 keyItem.getAttribute(hashKeyName).get().value()
         );
 
-        return route53Manager.getSingleValuedTXTResource(hkLabel, dyna53TableName)
-                .map(deserialized -> dyna53ObjectMapper.readValueRuntimeException(deserialized, Item.class))
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Requested resource not found")
-                );
+        Optional<Item> optionalItem;
+        if(! tableDefinition.hasRangeKey()) {
+            optionalItem = getItemHashKey(hkLabel, dyna53TableName);
+        } else {
+            var rangeKeyName = keysDefinition.rangeKey().get().keyName();
+            optionalItem = getItemsHashAndRangeKey(hkLabel, dyna53TableName)
+                    .filter(item ->
+                            item.getAttribute(rangeKeyName).get().value().equals(
+                                    keyItem.getAttribute(rangeKeyName).get().value()
+                            )
+                    )
+                    .findFirst();
+        }
+
+        return optionalItem.orElseThrow(
+                () -> new ResourceNotFoundException("Requested resource not found")
+        );
     }
 
     public Stream<Item> scan(ScanRequest scanRequest) {

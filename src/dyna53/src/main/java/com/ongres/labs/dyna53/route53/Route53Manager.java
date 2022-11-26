@@ -31,6 +31,8 @@ public class Route53Manager {
 
     private static final int ROUTE53_API_CALLS_TIMEOUT_SECONDS = 1;
 
+    private static final int MAX_VALUES_PER_RESOURCE_RECORD = 400;
+
     @ConfigProperty(name = "hosted_zone")
     String hostedZone;
 
@@ -53,7 +55,7 @@ public class Route53Manager {
     }
 
     private CompletableFuture<ChangeResourceRecordSetsResponse> actionAsyncResourceRecord(
-            ChangeAction changeAction, String label, RRType rrType, ResourceRecord resourceRecord
+            ChangeAction changeAction, String label, RRType rrType, ResourceRecord... resourceRecords
     ) {
         return route53AsyncClient.changeResourceRecordSets(
                 ChangeResourceRecordSetsRequest.builder()
@@ -67,7 +69,7 @@ public class Route53Manager {
                                                                 ResourceRecordSet.builder()
                                                                         .name(recordNameDotEnded(label))
                                                                         .type(rrType)
-                                                                        .resourceRecords(resourceRecord)
+                                                                        .resourceRecords(resourceRecords)
                                                                         .ttl(1L)
                                                                         .build()
                                                         ).build()
@@ -77,10 +79,10 @@ public class Route53Manager {
     }
 
     private void actionResourceRecord(
-            ChangeAction changeAction, String label, RRType rrType, ResourceRecord resourceRecord
+            ChangeAction changeAction, String label, RRType rrType, ResourceRecord... resourceRecords
     ) throws Route53Exception {
         var resultThrowable = actionAsyncResourceRecord(
-                changeAction, label, rrType, resourceRecord
+                changeAction, label, rrType, resourceRecords
         )
                 .orTimeout(ROUTE53_API_CALLS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .handle(
@@ -100,33 +102,44 @@ public class Route53Manager {
         }
     }
 
-    private ResourceRecord singleValuedResource(String value) throws InvalidValueException {
-        var valueRoute53Formatted = ResourceRecordValue.toRoute53Value(value);
-
+    private ResourceRecord generateResourceRecord(String value) throws InvalidValueException {
         return ResourceRecord.builder()
-                .value(valueRoute53Formatted)
+                .value(
+                    ResourceRecordValue.toRoute53Value(value)
+                )
                 .build();
     }
 
-    private void actionSingleValuedTXTResource(ChangeAction changeAction, String subLabel, String label, String value)
+    private ResourceRecord[] generateResourceRecords(String... values) throws InvalidValueException {
+        var resourceRecords = new ResourceRecord[values.length];
+        for(int i = 0; i < values.length; i++) {
+            resourceRecords[i] = generateResourceRecord(values[i]);
+        }
+
+        return resourceRecords;
+    }
+
+    private void actionMultiValuedTXTResource(ChangeAction changeAction, String subLabel, String label, String[] values)
     throws Route53Exception {
         actionResourceRecord(
                 changeAction,
                 labelFrom(subLabel, label),
                 RRType.TXT,
-                singleValuedResource(value)
+                generateResourceRecords(values)
         );
     }
 
-    public void upsertSingleValuedTXTResource(String subLabel, String label, String value) throws Route53Exception {
-        actionSingleValuedTXTResource(ChangeAction.UPSERT, subLabel, label, value);
+    public void upsertMultiValuedTXTResource(String subLabel, String label, String... values) throws Route53Exception {
+        if(values.length > MAX_VALUES_PER_RESOURCE_RECORD) {
+            throw new Route53Exception(
+                    "Resource Records cannot contain more than " + MAX_VALUES_PER_RESOURCE_RECORD + " values"
+            );
+        }
+
+        actionMultiValuedTXTResource(ChangeAction.UPSERT, subLabel, label, values);
     }
 
-    public void createSingleValuedTXTResource(String subLabel, String label, String value) throws Route53Exception {
-        actionSingleValuedTXTResource(ChangeAction.CREATE, subLabel, label, value);
-    }
-
-    private Optional<String> getSingleValuedResource(String label, RRType rrType) {
+    private Stream<String> getResourceRecordValues(String label, RRType rrType) {
         var result = route53AsyncClient.listResourceRecordSets(
                 ListResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
@@ -137,21 +150,24 @@ public class Route53Manager {
         ).join();
 
         if(! result.hasResourceRecordSets()) {
-            return Optional.empty();
+            return Stream.empty();
         }
         var resourceRecordsSetList = result.resourceRecordSets();
         if(resourceRecordsSetList.isEmpty()) {
-            return Optional.empty();
+            return Stream.empty();
         }
 
         var resourceRecordSet = resourceRecordsSetList.get(0);
 
         return resourceRecordSet.name().isEmpty() || (! resourceRecordSet.name().equals(recordNameDotEnded(label))) ?
-                Optional.empty() :
-                Optional.of(
-                        // TODO: hackish, no error checks
-                        resourceRecordSet.resourceRecords().get(0).value()
-                );
+                Stream.empty()
+                : resourceRecordSet.resourceRecords().stream().map(rr -> rr.value())
+                ;
+    }
+
+    private Optional<String> getSingleValuedResource(String label, RRType rrType) {
+        return getResourceRecordValues(label, rrType)
+                .findFirst();
     }
 
     /**
@@ -163,6 +179,13 @@ public class Route53Manager {
 
     public Optional<String> getSingleValuedTXTResource(String label, String subLabel) {
         return getSingleValuedResource(
+                labelFrom(label, subLabel), RRType.TXT
+        )
+                .map(r -> txtResourceValue2String(r));
+    }
+
+    public Stream<String> getMultiValuedTXTResource(String label, String subLabel) {
+        return getResourceRecordValues(
                 labelFrom(label, subLabel), RRType.TXT
         )
                 .map(r -> txtResourceValue2String(r));

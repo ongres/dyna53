@@ -16,4 +16,7 @@ public record TableKeysDefinition(
     @JsonProperty("hk") TableKeyDefinition hashKey,
     @JsonProperty("rk") Optional<TableKeyDefinition> rangeKey
 ) {
+    public boolean hasRangeKey() {
+        return rangeKey().isPresent();
+    }
 }
