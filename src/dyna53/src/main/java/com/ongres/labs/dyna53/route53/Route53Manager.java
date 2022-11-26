@@ -36,6 +36,11 @@ public class Route53Manager {
 
     private static final int MAX_VALUES_PER_RESOURCE_RECORD = 400;
 
+    private static final int MAX_RECORDS_HOSTED_ZONE = 10_000;
+
+    // Max number of items on a table: max records minus SOA and NS for the zone minus a single table definition SRV
+    private static final int MAX_ITEMS_HOSTED_ZONE = MAX_RECORDS_HOSTED_ZONE - 2 - 1;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Route53Manager.class);
 
     @ConfigProperty(name = "hosted_zone")
@@ -51,7 +56,7 @@ public class Route53Manager {
         var getHostedZoneRequest = GetHostedZoneRequest.builder()
                 .id(hostedZone)
                 .build();
-        
+
         route53AsyncClient.getHostedZone(getHostedZoneRequest)
                 .orTimeout(ROUTE53_API_CALLS_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .whenComplete(
@@ -245,6 +250,7 @@ public class Route53Manager {
         return route53AsyncClient.listResourceRecordSets(
                 ListResourceRecordSetsRequest.builder()
                         .hostedZoneId(hostedZone)
+                        .maxItems("" + MAX_ITEMS_HOSTED_ZONE)
                         .startRecordType(rrType)
                         // Surprisingly, if we don't include .startRecordName() we get a 400 - InvalidInputException
                         .startRecordName(FIRST_LETTER_FIRST_POSSIBLE_LEXICOGRAPHICAL_DOMAIN_NAME_ROUTE53_ESCAPED)
