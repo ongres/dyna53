@@ -6,7 +6,7 @@
 
   <groupId>com.ongres.labs</groupId>
   <artifactId>dyna53</artifactId>
-  <version>0.10-SNAPSHOT</version>
+  <version>0.10</version>
 
   <properties>
     <compiler-plugin.version>3.8.1</compiler-plugin.version>
