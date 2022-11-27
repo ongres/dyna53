@@ -23,11 +23,13 @@ Using DNS "as a database" is not a novel idea, but the concept of running a data
 However none of them exposes a well-known API like serverless' DynamoDB, which makes it very convenient supporting existing tools and code (including benchmarks!). This is the main driver behind this project.
 
 
-## Limitations
+## Documentation
 
-See [Limitations](doc/limitations.md).
+* [Running Dyna53](doc/running.md)
+* [Limitations](doc/limitations.md)
+* [FAQ](doc/FAQ.md)
 
 
 ## Disclaimer
 
-This is a toy, side-project. It is not intended to be used in production. Use at your own risk.
+Dyna53 is not a service or software by Amazon AWS. It is also not a production-ready service. It is not even a true product/service. It is essentially a joke. There is no affiliation with Amazon AWS. Use at your own risk. Amazon AWS charges may apply when using the software. "Amazon Web Services", "AWS" and "DynamoDB" are registered trademarks of Amazon Technologies, Inc.
