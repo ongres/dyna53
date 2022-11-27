@@ -16,7 +16,8 @@ public enum ErrorResponseType {
     RESOURCE_IN_USE_EXCEPTION("com.amazonaws.dynamodb.v20120810#ResourceInUseException"),
     PROVISIONED_THROUGHPUT_EXCEEDED_EXCEPTION("com.amazonaws.dynamodb.v20111205#ProvisionedThroughputExceededException"),
     VALIDATION_EXCEPTION("com.amazon.coral.validate#ValidationException"),
-    INTERNAL_SERVER_ERROR("com.amazonaws.dynamodb.v20120810#InternalFailure")
+    INTERNAL_SERVER_ERROR("com.amazonaws.dynamodb.v20120810#InternalFailure"),
+    INVALID_SIGNATURE_EXCEPTION("com.amazon.coral.service#InvalidSignatureException")
     ;
 
     private static final Map<String,ErrorResponseType> INSTANCES_BY_VALUE = Arrays
