@@ -30,6 +30,11 @@ However none of them exposes a well-known API like serverless' DynamoDB, which m
 * [FAQ](doc/FAQ.md)
 
 
+## Dyna53 in the news
+
+* **April 1st, 2023**. Experts at [o11y.eu concluded](https://o11y.eu/blog/dyna53-lts-backend/) that for PrometheusIO long-Term storage nor Thanos, Cortex, TimescaleDB or Mimir are the best solution, but rather Dyna53.
+
+
 ## Disclaimer
 
 Dyna53 is not a service or software by Amazon AWS. It is also not a production-ready service. It is not even a true product/service. It is essentially a joke. There is no affiliation with Amazon AWS. Use at your own risk. Amazon AWS charges may apply when using the software. "Amazon Web Services", "AWS" and "DynamoDB" are registered trademarks of Amazon Technologies, Inc.
